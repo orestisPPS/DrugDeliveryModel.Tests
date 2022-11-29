@@ -18,7 +18,7 @@ using MGroup.Constitutive.ConvectionDiffusion;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
-	public class EquationsTests1
+	public class EquationsTests1DistributedModelBuilder
     {
         const double Sc = 0.1;
         const double timeStep = 1; // in days
@@ -32,7 +32,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double lambda0 = 1;
         static Dictionary<double, double[]> Solution = new Dictionary<double, double[]>(); private static List<(INode node, IDofType dof)> watchDofs = new List<(INode node, IDofType dof)>();
 
-		public EquationsTests1()
+		public EquationsTests1DistributedModelBuilder()
 		{
             IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
         }
