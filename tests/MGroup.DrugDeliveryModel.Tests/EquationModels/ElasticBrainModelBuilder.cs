@@ -77,7 +77,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 lambda.Add(elem.Key,  1d);
             }
 
-            var model = new Model[] { CreateElasticModelFromComsolFile(reader, miNormal, kappaNormal, miTumor, kappaTumor, lambda), };
+            var model = new Model[] { CreateElasticModelFromComsolFile(reader,  lambda), };
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
             var algebraicModel = new[] { solverFactory.BuildAlgebraicModel(model[0]), };
             solvers[0] = solverFactory.BuildSolver(algebraicModel[0]);
@@ -93,9 +93,9 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(
                 new List<(INode node, IDofType dof)>()
                 {
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationX),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationY),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationZ),
+                    (model[0].NodesDictionary[1270], StructuralDof.TranslationX),
+                    (model[0].NodesDictionary[1270], StructuralDof.TranslationY),
+                    (model[0].NodesDictionary[1270], StructuralDof.TranslationZ),
 
                 }, algebraicModel[0]
             );
@@ -107,9 +107,9 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             {
                 new List<(INode node, IDofType dof)>()
                 {
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationX),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationY),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationZ),
+                    (model[0].NodesDictionary[1270], StructuralDof.TranslationX),
+                    (model[0].NodesDictionary[1270], StructuralDof.TranslationY),
+                    (model[0].NodesDictionary[1270], StructuralDof.TranslationZ),
                 }
             };
 
@@ -135,7 +135,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
         }
 
-        public static Model CreateElasticModelFromComsolFile(ComsolMeshReader reader, double miNormal, double kappaNormal, double miTumor, double kappaTumor, Dictionary<int, double> lambda)
+        public static Model CreateElasticModelFromComsolFile(ComsolMeshReader reader,  Dictionary<int, double> lambda)
         {
             var nodes = reader.NodesDictionary;
             var model = new Model();
@@ -146,13 +146,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 model.NodesDictionary.Add(node.ID, node);
             }
 
-            //(double ENormal, double poissonNormal) = GetElasticModelParameters(miNormal, kappaNormal);
-            //(double ETumor, double poissonTumor) = GetElasticModelParameters(miTumor, kappaTumor);
-            //var materialNormal = new ElasticMaterial3DDefGrad(ENormal, poissonNormal);
-            //var materialTumor = new ElasticMaterial3DDefGrad(ETumor, poissonTumor);
-            var materialNormal = new NeoHookeanMaterial3dJ3Isochoric(miNormal, kappaNormal);
-            var materialTumor = new NeoHookeanMaterial3dJ3Isochoric(miTumor, kappaTumor);
-            var material = new ElasticMaterial3DDefGrad(youngModulus: 1353000, poissonRatio: 0.3);
+          
+            var material = new ElasticMaterial3DDefGrad(youngModulus: 100, poissonRatio: 0.3);
 
             var elasticMaterial = new ElasticMaterial3D(youngModulus: 1, poissonRatio: 0.3);
             var DynamicMaterial = new TransientAnalysisProperties(density: 1, rayleighCoeffMass: 0, rayleighCoeffStiffness: 0);
@@ -162,58 +157,44 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             foreach (var elementConnectivity in reader.ElementConnectivity)
             {
                 var domainId = elementConnectivity.Value.Item3;
-                var element = elementFactory.CreateNonLinearElementGrowt(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2, domainId == 0 ? materialTumor : materialNormal, DynamicMaterial, lambda[elementConnectivity.Key]);
+                var element = elementFactory.CreateNonLinearElementGrowt(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2, material, DynamicMaterial, lambda[elementConnectivity.Key]);
                 model.ElementsDictionary.Add(elementConnectivity.Key, element);
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
 
-            var faceXYNodes = new List<INode>();
-            var faceXZNodes = new List<INode>();
-            var faceYZNodes = new List<INode>();
-
-            foreach (var node in model.NodesDictionary.Values)
-            {
-                if (Math.Abs(0 - node.Z) < 1E-9) faceXYNodes.Add(node);
-                if (Math.Abs(0 - node.Y) < 1E-9) faceXZNodes.Add(node);
-                if (Math.Abs(0 - node.X) < 1E-9) faceYZNodes.Add(node);
-            }
+           
 
 
             // nodes 2 832 1896 xy,z=0
             var constraints = new List<INodalDisplacementBoundaryCondition>();
-            foreach (var node in faceXYNodes)
-            {
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
-            }
-            foreach (var node in faceXZNodes)
-            {
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
-            }
-            foreach (var node in faceYZNodes)
-            {
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
-            }
+            
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[2], StructuralDof.TranslationX, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[2], StructuralDof.TranslationY, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[2], StructuralDof.TranslationZ, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[832], StructuralDof.TranslationX, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[832], StructuralDof.TranslationY, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[832], StructuralDof.TranslationZ, amount: 0d)); 
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1896], StructuralDof.TranslationX, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1896], StructuralDof.TranslationY, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1896], StructuralDof.TranslationZ, amount: 0d));
 
-            INode maxDistanceNode = null;
-            double currentMaxDistance = 0;
-            foreach (INode node in model.NodesDictionary.Values)
-            {
-                double distance = Math.Sqrt(Math.Pow(node.X, 2) + Math.Pow(node.Y, 2) + Math.Pow(node.Z, 2));
-                if (distance > currentMaxDistance)
-                {
-                    currentMaxDistance = distance;
-                    maxDistanceNode = node;
-                }
-            }
+            
+            
 
             //node 1270 val=(1000,1000,0);
             var loads = new List<INodalLoadBoundaryCondition>();
 
             loads.Add(new NodalLoad
             (
-                maxDistanceNode,
+                model.NodesDictionary[1270],
                 StructuralDof.TranslationX,
-                amount: 0.00000001
+                amount: 1000
+            ));
+            loads.Add(new NodalLoad
+            (
+                model.NodesDictionary[1270],
+                StructuralDof.TranslationY,
+                amount: 1000
             ));
 
 
