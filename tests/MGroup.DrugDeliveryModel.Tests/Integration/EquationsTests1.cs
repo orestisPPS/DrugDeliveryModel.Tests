@@ -52,7 +52,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var model = modelProvider.CreateModelFromComsolFile(fileName);
             modelProvider.AddTopAndBottomBCs(model, 2, 1, 0, 1);
-            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 2, 0, 0);
+            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 2, 0, 1);
 
 
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false}; //Dense Matrix Solver solves with zero matrices!
