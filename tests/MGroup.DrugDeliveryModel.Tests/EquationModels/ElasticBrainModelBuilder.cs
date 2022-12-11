@@ -67,73 +67,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             reader = new ComsolMeshReader(fileName);
         }
 
-        public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
-        {
-            //Changed this
-            Dictionary<int, double> lambda = new Dictionary<int, double>(reader.ElementConnectivity.Count());
-            //Dictionary<int, double> lambda = new Dictionary<int, double>();
-            foreach (var elem in reader.ElementConnectivity)
-            {
-                lambda.Add(elem.Key,  1d);
-            }
-
-            var model = new Model[] { CreateElasticModelFromComsolFile(reader,  lambda), };
-            var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
-            var algebraicModel = new[] { solverFactory.BuildAlgebraicModel(model[0]), };
-            solvers[0] = solverFactory.BuildSolver(algebraicModel[0]);
-            var problem = new[] { new ProblemStructural(model[0], algebraicModel[0], solvers[0]), };
-            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder( algebraicModel[0], solvers[0], problem[0], numIncrements: nrIncrements)
-            {
-                ResidualTolerance = 1E-4,
-                MaxIterationsPerIncrement = 1000,
-                NumIterationsForMatrixRebuild = 1
-            };
-            nlAnalyzers[0] = loadControlAnalyzerBuilder.Build();
-            var loadControlAnalyzer = (LoadControlAnalyzer)nlAnalyzers[0];
-            loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(
-                new List<(INode node, IDofType dof)>()
-                {
-                    (model[0].NodesDictionary[1270], StructuralDof.TranslationX),
-                    (model[0].NodesDictionary[1270], StructuralDof.TranslationY),
-                    (model[0].NodesDictionary[1270], StructuralDof.TranslationZ),
-
-                }, algebraicModel[0]
-            );
-
-            analyzers[0] = (new PseudoTransientAnalyzer.Builder( algebraicModel[0], problem[0], loadControlAnalyzer, timeStep: timeStep, totalTime: totalTime, currentStep: CurrentTimeStep)).Build();
-
-            //Sparse tet Mesh
-            var watchDofs = new[]
-            {
-                new List<(INode node, IDofType dof)>()
-                {
-                    (model[0].NodesDictionary[1270], StructuralDof.TranslationX),
-                    (model[0].NodesDictionary[1270], StructuralDof.TranslationY),
-                    (model[0].NodesDictionary[1270], StructuralDof.TranslationZ),
-                }
-            };
-
-
-            //Print the coordinates of the watchdof for comsol comparison
-            //Console.WriteLine("DOF :" + model[0].NodesDictionary[13].ID + " X: " + model[0].NodesDictionary[13].X + " Y: " + model[0].NodesDictionary[13].Y + " Z: " + model[0].NodesDictionary[13].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[13]);
-            //Console.WriteLine("DOF :" + model[0].NodesDictionary[333].ID + " X: " + model[0].NodesDictionary[333].X + " Y: " + model[0].NodesDictionary[333].Y + " Z: " + model[0].NodesDictionary[333].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[333]);
-
-            loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel[0]);
-
-            for (int i = 0; i < analyzers.Length; i++)
-            {
-                analyzers[i].Initialize(true);
-                if (analyzerStates[i] != null)
-                {
-                    analyzers[i].CurrentState = analyzerStates[i];
-                }
-
-                if (nlAnalyzerStates[i] != null)
-                {
-                    nlAnalyzers[i].CurrentState = nlAnalyzerStates[i];
-                }
-            }
-        }
+        
 
         public static Model CreateElasticModelFromComsolFile(ComsolMeshReader reader,  Dictionary<int, double> lambda)
         {
@@ -162,37 +96,58 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
 
-           
+            Dictionary<int,bool> NodeHasElement = new Dictionary<int,bool>(model.NodesDictionary.Count());
+            foreach (var node in nodes.Values)
+            {
+                NodeHasElement[node.ID] = false;
+            }
+
+            foreach (var elementConnectivity in reader.ElementConnectivity)
+            {
+                foreach (var node in elementConnectivity.Value.Item2)
+                {
+                    NodeHasElement[node.ID] = true;
+                }
+                
+            }
+
+            foreach (var node in nodes.Values)
+            {
+                if(NodeHasElement[node.ID] == false)
+                {
+                    var breakpoint = "here";
+                }
+            }
 
 
             // nodes 2 832 1896 xy,z=0
             var constraints = new List<INodalDisplacementBoundaryCondition>();
             
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[2], StructuralDof.TranslationX, amount: 0d));
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[2], StructuralDof.TranslationY, amount: 0d));
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[2], StructuralDof.TranslationZ, amount: 0d));
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[832], StructuralDof.TranslationX, amount: 0d));
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[832], StructuralDof.TranslationY, amount: 0d));
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[832], StructuralDof.TranslationZ, amount: 0d)); 
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[1896], StructuralDof.TranslationX, amount: 0d));
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[1896], StructuralDof.TranslationY, amount: 0d));
-            constraints.Add(new NodalDisplacement(model.NodesDictionary[1896], StructuralDof.TranslationZ, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1], StructuralDof.TranslationX, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1], StructuralDof.TranslationY, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1], StructuralDof.TranslationZ, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[799], StructuralDof.TranslationX, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[799], StructuralDof.TranslationY, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[799], StructuralDof.TranslationZ, amount: 0d)); 
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1756], StructuralDof.TranslationX, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1756], StructuralDof.TranslationY, amount: 0d));
+            constraints.Add(new NodalDisplacement(model.NodesDictionary[1756], StructuralDof.TranslationZ, amount: 0d));
+            
 
-            
-            
+
 
             //node 1270 val=(1000,1000,0);
             var loads = new List<INodalLoadBoundaryCondition>();
 
             loads.Add(new NodalLoad
             (
-                model.NodesDictionary[1270],
+                model.NodesDictionary[1154],
                 StructuralDof.TranslationX,
                 amount: 1000
             ));
             loads.Add(new NodalLoad
             (
-                model.NodesDictionary[1270],
+                model.NodesDictionary[1154],
                 StructuralDof.TranslationY,
                 amount: 1000
             ));
@@ -202,6 +157,75 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
             return model;
         }
+
+
+        //public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
+        //{
+        //    //Changed this
+        //    Dictionary<int, double> lambda = new Dictionary<int, double>(reader.ElementConnectivity.Count());
+        //    //Dictionary<int, double> lambda = new Dictionary<int, double>();
+        //    foreach (var elem in reader.ElementConnectivity)
+        //    {
+        //        lambda.Add(elem.Key, 1d);
+        //    }
+
+        //    var model = new Model[] { CreateElasticModelFromComsolFile(reader, lambda), };
+        //    var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
+        //    var algebraicModel = new[] { solverFactory.BuildAlgebraicModel(model[0]), };
+        //    solvers[0] = solverFactory.BuildSolver(algebraicModel[0]);
+        //    var problem = new[] { new ProblemStructural(model[0], algebraicModel[0], solvers[0]), };
+        //    var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel[0], solvers[0], problem[0], numIncrements: nrIncrements)
+        //    {
+        //        ResidualTolerance = 1E-4,
+        //        MaxIterationsPerIncrement = 1000,
+        //        NumIterationsForMatrixRebuild = 1
+        //    };
+        //    nlAnalyzers[0] = loadControlAnalyzerBuilder.Build();
+        //    var loadControlAnalyzer = (LoadControlAnalyzer)nlAnalyzers[0];
+        //    loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(
+        //        new List<(INode node, IDofType dof)>()
+        //        {
+        //            (model[0].NodesDictionary[1270], StructuralDof.TranslationX),
+        //            (model[0].NodesDictionary[1270], StructuralDof.TranslationY),
+        //            (model[0].NodesDictionary[1270], StructuralDof.TranslationZ),
+
+        //        }, algebraicModel[0]
+        //    );
+
+        //    analyzers[0] = (new PseudoTransientAnalyzer.Builder(algebraicModel[0], problem[0], loadControlAnalyzer, timeStep: timeStep, totalTime: totalTime, currentStep: CurrentTimeStep)).Build();
+
+        //    //Sparse tet Mesh
+        //    var watchDofs = new[]
+        //    {
+        //        new List<(INode node, IDofType dof)>()
+        //        {
+        //            (model[0].NodesDictionary[1270], StructuralDof.TranslationX),
+        //            (model[0].NodesDictionary[1270], StructuralDof.TranslationY),
+        //            (model[0].NodesDictionary[1270], StructuralDof.TranslationZ),
+        //        }
+        //    };
+
+
+        //    //Print the coordinates of the watchdof for comsol comparison
+        //    //Console.WriteLine("DOF :" + model[0].NodesDictionary[13].ID + " X: " + model[0].NodesDictionary[13].X + " Y: " + model[0].NodesDictionary[13].Y + " Z: " + model[0].NodesDictionary[13].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[13]);
+        //    //Console.WriteLine("DOF :" + model[0].NodesDictionary[333].ID + " X: " + model[0].NodesDictionary[333].X + " Y: " + model[0].NodesDictionary[333].Y + " Z: " + model[0].NodesDictionary[333].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[333]);
+
+        //    loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel[0]);
+
+        //    for (int i = 0; i < analyzers.Length; i++)
+        //    {
+        //        analyzers[i].Initialize(true);
+        //        if (analyzerStates[i] != null)
+        //        {
+        //            analyzers[i].CurrentState = analyzerStates[i];
+        //        }
+
+        //        if (nlAnalyzerStates[i] != null)
+        //        {
+        //            nlAnalyzers[i].CurrentState = nlAnalyzerStates[i];
+        //        }
+        //    }
+        //}
 
         /// <summary>
         /// https://en.wikiversity.org/wiki/Elasticity/Constitutive_relations
