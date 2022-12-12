@@ -42,32 +42,62 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         [InlineData("../../../DataFiles/workingTetMesh155.mphtxt", 1, 1, 6.94e-6, 0.0083)]
         public void SolveEquation1(string fileName, double cox, double T, double k1, double k2)
         {
+            // node ID to monitor
+            int nodeA = 36;
+            //time interval
+            double totalTime = 10;
+            double timeStep = 1;
+
+
+            // define model solution properties
             double capacity = 1;
             double dependentProductionCoeff = ((double)1 / 3) * k1 * cox * T / (k2 + cox);
             double convectionCoeff = 0;
             double independentSource = 0;
             double diffusion = 0;
-            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProvider(new double[] { convectionCoeff, convectionCoeff, convectionCoeff },
-                diffusion, dependentProductionCoeff, independentSource, capacity);
-
-            var model = modelProvider.CreateModelFromComsolFile(fileName);
-            modelProvider.AddTopAndBottomBCs(model, 2, 1, 0, 1);
-            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 2, 0, 1);
 
 
-            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false}; //Dense Matrix Solver solves with zero matrices!
+            //get element connectivities from file
+            var modelReader = new ComsolMeshReader(fileName);
+
+            //  initiallize dictionaries of coefficients
+            Dictionary<int, double[]> ConvectionCoeffs = new Dictionary<int, double[]>();//=> new[]  {1d, 1d, 1d};                                                                                                //public double DiffusionCoeff;
+            Dictionary<int, double> DependentProductionCoeffs = new Dictionary<int, double>();
+            Dictionary<int, double> IndependentProductionCoeffs = new Dictionary<int, double>();
+            foreach (var elementConnectivity in modelReader.ElementConnectivity)
+            {
+                ConvectionCoeffs[elementConnectivity.Key] = new double[] { convectionCoeff, convectionCoeff, convectionCoeff };
+                DependentProductionCoeffs[elementConnectivity.Key] = dependentProductionCoeff;
+                IndependentProductionCoeffs[elementConnectivity.Key] = independentSource;
+            }
+
+            //initialize mpdel provider solution
+            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(modelReader);
+
+            var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusion,
+                DependentProductionCoeffs, IndependentProductionCoeffs, capacity);
+            modelProvider.AddTopAndBottomBCs(model, 0.1, 1, 0, 1);
+            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 0.1, 0, 1);
+
+
+            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; //Dense Matrix Solver solves with zero matrices!
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
-            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder( algebraicModel, problem, linearAnalyzer, timeStep: 1, totalTime: 10);
+
+
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem,
+                linearAnalyzer, timeStep: timeStep, totalTime: totalTime);
             var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
+
+
 
             var watchDofs = new List<(INode node, IDofType dof)>()
             {
-                (model.NodesDictionary[36], ConvectionDiffusionDof.UnknownVariable),
+                (model.NodesDictionary[nodeA], ConvectionDiffusionDof.UnknownVariable),
             };
 
             linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
@@ -76,47 +106,102 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             dynamicAnalyzer.Initialize();
             dynamicAnalyzer.Solve();
 
+            int totalNewmarkstepsNum = (int)Math.Truncate(totalTime / timeStep);
+            var unknownVariableOverTime = new double[totalNewmarkstepsNum];
+            for (int i1 = 0; i1 < totalNewmarkstepsNum; i1++)
+            {
+                var timeStepResultsLog = dynamicAnalyzer.ResultStorage.Logs[i1];
+                unknownVariableOverTime[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeA), ConvectionDiffusionDof.UnknownVariable];
+            }
+
+            double[] analyticalExpected = new double[] {
+                    1.0000022942933522,
+                    1.0000045885919682,
+                    1.0000068828958482,
+                    1.0000091772049917,
+                    1.0000114715193991,
+                    1.0000137658390704,
+                    1.0000160601640056,
+                    1.0000183544942045,
+                    1.0000206488296672,
+                    1.0000229431703940 };
+
+            Assert.True(Utilities.AreDisplacementsSame(analyticalExpected,
+                                                                unknownVariableOverTime, tolerance: 1e-6));
             DOFSLog log = (DOFSLog)linearAnalyzer.Logs[0];
             double computedValue = log.DOFValues[watchDofs[0].node, watchDofs[0].dof];
 
         }
 
         [Theory]
-        [InlineData("../../../DataFiles/workingTetMesh155.mphtxt", 1, 6.94e-6, 0.0083,1,500)]
+        [InlineData("../../../DataFiles/workingTetMesh155.mphtxt", 1, 6.94e-6, 0.0083,0.01,500)]
         public void SolveEquation2(string fileName, double cox, double k1, double k2, double vs, double T_initial)
         {
+            // node ID to monitor
+            int nodeA = 36;
+            //time interval
+            double totalTime = 10;
+            double timeStep = 0.1;// TODO: variate time step and vs velocity
+
             double capacity = 1;
             double dependentProductionCoeff = k1 * cox / (k2 + cox);
             double convectionCoeff = vs;
             double independentSource = 0;
             double diffusion = 0;
-            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProvider(new double[] { convectionCoeff, convectionCoeff, convectionCoeff },
-               diffusion, dependentProductionCoeff, independentSource, capacity);
 
-            var model = modelProvider.CreateModelFromComsolFile(fileName);
-            modelProvider.AddTopAndBottomBCs(model, 2, 1, 0, 1);
-            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 2, 0, T_initial);
+            //get element connectivities from file
+            var modelReader = new ComsolMeshReader(fileName);
+
+            //  initiallize dictionaries of coefficients
+            Dictionary<int, double[]> ConvectionCoeffs = new Dictionary<int, double[]>();//=> new[]  {1d, 1d, 1d};                                                                                                //public double DiffusionCoeff;
+            Dictionary<int, double> DependentProductionCoeffs = new Dictionary<int, double>();
+            Dictionary<int, double> IndependentProductionCoeffs = new Dictionary<int, double>();
+            foreach (var elementConnectivity in modelReader.ElementConnectivity)
+            {
+                ConvectionCoeffs[elementConnectivity.Key] = new double[] { convectionCoeff, convectionCoeff, convectionCoeff };
+                DependentProductionCoeffs[elementConnectivity.Key] = dependentProductionCoeff;
+                IndependentProductionCoeffs[elementConnectivity.Key] = independentSource;
+            }
+
+            //initialize mpdel provider solution
+            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(modelReader);
+
+            var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusion,
+                DependentProductionCoeffs, IndependentProductionCoeffs, capacity);
+            modelProvider.AddTopAndBottomBCs(model, 0.1, T_initial, 0, T_initial);
+            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 0.1, 0, T_initial);
 
 
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; 
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
-            var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder( algebraicModel, problem, linearAnalyzer, timeStep: 1, totalTime: 10, bdfOrder: 5);
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem,
+                linearAnalyzer, timeStep: timeStep, totalTime: totalTime); 
             var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
 
             var watchDofs = new List<(INode node, IDofType dof)>()
             {
-                (model.NodesDictionary[36], ConvectionDiffusionDof.UnknownVariable),
+                (model.NodesDictionary[nodeA], ConvectionDiffusionDof.UnknownVariable),
             };
 
             linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
 
+
+            dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
             dynamicAnalyzer.Initialize();
             dynamicAnalyzer.Solve();
+
+            int totalNewmarkstepsNum = (int)Math.Truncate(totalTime / timeStep);
+            var unknownVariableOverTime = new double[totalNewmarkstepsNum];
+            for (int i1 = 0; i1 < totalNewmarkstepsNum; i1++)
+            {
+                var timeStepResultsLog = dynamicAnalyzer.ResultStorage.Logs[i1];
+                unknownVariableOverTime[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeA), ConvectionDiffusionDof.UnknownVariable];
+            }
 
         }
 
@@ -154,7 +239,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false}; //Dense Matrix Solver solves with zero matrices!
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
@@ -201,7 +286,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; //Dense Matrix Solver solves with zero matrices!
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 

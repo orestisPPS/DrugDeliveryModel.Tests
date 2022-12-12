@@ -58,7 +58,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false}; //Dense Matrix Solver solves with zero matrices!
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
@@ -101,7 +101,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; 
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
@@ -154,7 +154,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false}; //Dense Matrix Solver solves with zero matrices!
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
@@ -201,7 +201,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; //Dense Matrix Solver solves with zero matrices!
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel, solver);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 

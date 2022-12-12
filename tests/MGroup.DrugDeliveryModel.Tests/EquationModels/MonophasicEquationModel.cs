@@ -81,7 +81,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
             var algebraicModel = new[] { solverFactory.BuildAlgebraicModel(model[0]), };
             solvers[0] = solverFactory.BuildSolver(algebraicModel[0]);
-            var problem = new[] { new ProblemStructural(model[0], algebraicModel[0], solvers[0]), };
+            var problem = new[] { new ProblemStructural(model[0], algebraicModel[0]), };
             var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder( algebraicModel[0], solvers[0], problem[0], numIncrements: nrIncrements)
             {
                 ResidualTolerance = 1E-4,

@@ -56,7 +56,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
             var algebraicModel = new[] { solverFactory.BuildAlgebraicModel(model[0]), };
             var solver = new[] { solverFactory.BuildSolver(algebraicModel[0]), };
-            var problem = new[] { new ProblemStructural(model[0], algebraicModel[0], solver[0]), };
+            var problem = new[] { new ProblemStructural(model[0], algebraicModel[0]), };
             var linearAnalyzer = new LinearAnalyzer(algebraicModel[0], solver[0], problem[0]);
             var analyzer = new StaticAnalyzer( algebraicModel[0], problem[0], linearAnalyzer);
             analyzer.Initialize();
