@@ -6,7 +6,7 @@ using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 using MGroup.FEM.ConvectionDiffusion.Isoparametric;
 using MGroup.MSolve.Discretization.Entities;
 using MGroup.MSolve.Discretization;
-using MGroup.FEM.Helpers;
+//using MGroup.FEM.Helpers;
 using MGroup.DrugDeliveryModel.Tests.Commons;
 using MGroup.Constitutive.Structural.InitialConditions;
 using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;

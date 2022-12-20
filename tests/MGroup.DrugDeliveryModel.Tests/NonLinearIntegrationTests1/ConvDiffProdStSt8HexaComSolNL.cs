@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using MGroup.FEM.ConvectionDiffusion.Tests.Commons;
+using MGroup.NumericalAnalyzers.Discretization.NonLinear;
 //using MGroup.FEM.ConvectionDiffusion.Tests.Commons;
 
 namespace MGroup.FEM.ConvectionDiffusion.Tests.Integration
@@ -37,26 +38,54 @@ namespace MGroup.FEM.ConvectionDiffusion.Tests.Integration
             var solver = solverFactory.BuildSolver(algebraicModel);
             var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
-            var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
-
-            var analyzer = new StaticAnalyzer(algebraicModel, problem, linearAnalyzer);
-
-            var watchDofs = new List<(INode node, IDofType dof)>()
+            //var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
+            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, problem, numIncrements: 2)
             {
-                (model.NodesDictionary[13], ConvectionDiffusionDof.UnknownVariable),
+                ResidualTolerance = 1E-8,
+                MaxIterationsPerIncrement = 100,
+                NumIterationsForMatrixRebuild = 1
             };
-            linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
+            var loadControlAnalyzer = loadControlAnalyzerBuilder.Build();
+
+            var analyzer = new StaticAnalyzer(algebraicModel, problem, loadControlAnalyzer);
+
+            //var watchDofs = new List<(INode node, IDofType dof)>()
+            //{
+            //    (model.NodesDictionary[13], ConvectionDiffusionDof.UnknownVariable),
+            //};
+            //linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
+
+            loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(
+                new List<(INode node, IDofType dof)>()
+                {
+                    (model.NodesDictionary[13], ConvectionDiffusionDof.UnknownVariable),
+                    
+                }, algebraicModel
+            );
 
             analyzer.Initialize();
             analyzer.Solve();
 
-            DOFSLog log = (DOFSLog)linearAnalyzer.Logs[0];
-            var numericalSolution = new double[watchDofs.Count];
-            for (int i = 0; i < numericalSolution.Length; i++)
+            List<double> displacements = new List<double>();
+
+            for (var iter = 0; iter < 3; ++iter)
             {
-                numericalSolution[i] = log.DOFValues[watchDofs[i].node, watchDofs[i].dof];
+                for (var i = 0; i < 1; ++i)
+                {
+                    displacements.Add(loadControlAnalyzer.TotalDisplacementsPerIterationLog.GetTotalDisplacement(iter, model.NodesDictionary[13], ConvectionDiffusionDof.UnknownVariable));
+                    
+                    
+                }
             }
-            Assert.True(ResultChecker.CheckResults(numericalSolution, prescribedSolution, tolerance));
+
+
+            //DOFSLog log = (DOFSLog)linearAnalyzer.Logs[0];
+            //var numericalSolution = new double[watchDofs.Count];
+            //for (int i = 0; i < numericalSolution.Length; i++)
+            //{
+            //    numericalSolution[i] = log.DOFValues[watchDofs[i].node, watchDofs[i].dof];
+            //}
+            Assert.True(ResultChecker.CheckResults(new double[] { displacements.Last() }, prescribedSolution, tolerance));
         }
     }
 }

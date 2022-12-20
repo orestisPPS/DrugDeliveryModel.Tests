@@ -21,23 +21,28 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 {
 	public class MonophasicEquationModelDynamic
     {
+        private StructuralDof loadedDof ;
+        private double load_value;
         const int nrIncrements = 1;
-        private double timeStep = 1; // in days
-        private double totalTime = 10; // in days
-        private double sc = 0.1;
-        private double miNormal = 5;//KPa
-        private double kappaNormal = 6.667; //Kpa
-        private double miTumor = 22.44; //Kpa
-        private double kappaTumor = 201.74; //Kpa
-        private double lambda0 = 1;
+        //private double timeStep = 1; // in days
+        //private double totalTime = 10; // in days
+        //private double sc = 0.1;
+        private double miNormal;// = 5;//KPa
+        private double kappaNormal;// = 6.667; //Kpa
+        private double miTumor;// = 22.44; //Kpa
+        private double kappaTumor;// = 201.74; //Kpa
+        private double lambda0;// = 1;
+        public double density;// = 1;
         private ComsolMeshReader reader;
         private GenericAnalyzerState[] analyzerStates, nlAnalyzerStates;
         private IParentAnalyzer[] parentAnalyzers;
         private IChildAnalyzer[] nlAnalyzers;
         private ISolver[] parentSolvers;
         private string fileName;
+        private Dictionary<int, double> lambda;
+        public int loadedNodeId { get; private set; }
 
-        public double CalculateLambda(double timeInDays) => lambda0 * Math.Exp(sc * timeInDays / 3d);
+        //public double CalculateLambda(double timeInDays) => lambda0 * Math.Exp(sc * timeInDays / 3d);
 
         public int CurrentTimeStep { get; set; }
         public GenericAnalyzerState[] AnalyzerStates => analyzerStates;
@@ -47,17 +52,21 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         public ISolver[] ParentSolvers => parentSolvers;
         public ComsolMeshReader Reader => reader;
 
-        public MonophasicEquationModelDynamic(string fileName, double sc, double miNormal, double kappaNormal, double miTumor, double kappaTumor, double timeStep, double totalTime, double lambda0)
+        public MonophasicEquationModelDynamic(string fileName, double sc, double miNormal, double kappaNormal, double miTumor, double kappaTumor, double timeStep, 
+            double totalTime, double lambda0, double density, StructuralDof loadedDof, double load_value)
         {
-            this.sc = sc;
+            //this.sc = sc;
             this.miNormal = miNormal;
             this.kappaNormal = kappaNormal;
             this.miTumor = miTumor;
             this.kappaTumor = kappaTumor;
-            this.totalTime = totalTime;
-            this.timeStep = timeStep;
+            //this.totalTime = totalTime;
+            //this.timeStep = timeStep;
             this.lambda0 = lambda0;
             this.fileName = fileName;
+            this.density = density;
+            this.loadedDof = loadedDof;
+            this.load_value = load_value;
             analyzerStates = new GenericAnalyzerState[1];
             nlAnalyzerStates = new GenericAnalyzerState[1];
             parentAnalyzers = new IParentAnalyzer[1];
@@ -65,77 +74,90 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             parentSolvers = new ISolver[1];
 
             reader = new ComsolMeshReader(fileName);
-        }
 
-        public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
-        {
-            //Changed this
-            Dictionary<int, double> lambda = new Dictionary<int, double>(reader.ElementConnectivity.Count());
+             lambda = new Dictionary<int, double>(reader.ElementConnectivity.Count());
             //Dictionary<int, double> lambda = new Dictionary<int, double>();
             foreach (var elem in reader.ElementConnectivity)
             {
-                lambda.Add(elem.Key, elem.Value.Item3 == 0 ? CalculateLambda(CurrentTimeStep * timeStep) : 1d);
+                lambda.Add(elem.Key, 1d);
             }
 
-            var model = new Model[] { CreateElasticModelFromComsolFile(reader, miNormal, kappaNormal, miTumor, kappaTumor, lambda), };
-            var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
-            var algebraicModel = new[] { solverFactory.BuildAlgebraicModel(model[0]), };
-            solvers[0] = solverFactory.BuildSolver(algebraicModel[0]);
-            var problem = new[] { new ProblemStructural(model[0], algebraicModel[0]), };
-            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder( algebraicModel[0], solvers[0], problem[0], numIncrements: nrIncrements)
-            {
-                ResidualTolerance = 1E-4,
-                MaxIterationsPerIncrement = 1000,
-                NumIterationsForMatrixRebuild = 1
-            };
-            nlAnalyzers[0] = loadControlAnalyzerBuilder.Build();
-            var loadControlAnalyzer = (LoadControlAnalyzer)nlAnalyzers[0];
-            loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(
-                new List<(INode node, IDofType dof)>()
-                {
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationX),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationY),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationZ),
-
-                }, algebraicModel[0]
-            );
-
-            analyzers[0] = (new PseudoTransientAnalyzer.Builder( algebraicModel[0], problem[0], loadControlAnalyzer, timeStep: timeStep, totalTime: totalTime, currentStep: CurrentTimeStep)).Build();
-
-            //Sparse tet Mesh
-            var watchDofs = new[]
-            {
-                new List<(INode node, IDofType dof)>()
-                {
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationX),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationY),
-                    (model[0].NodesDictionary[333], StructuralDof.TranslationZ),
-                }
-            };
-
-
-            //Print the coordinates of the watchdof for comsol comparison
-            //Console.WriteLine("DOF :" + model[0].NodesDictionary[13].ID + " X: " + model[0].NodesDictionary[13].X + " Y: " + model[0].NodesDictionary[13].Y + " Z: " + model[0].NodesDictionary[13].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[13]);
-            //Console.WriteLine("DOF :" + model[0].NodesDictionary[333].ID + " X: " + model[0].NodesDictionary[333].X + " Y: " + model[0].NodesDictionary[333].Y + " Z: " + model[0].NodesDictionary[333].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[333]);
-
-            loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel[0]);
-
-            for (int i = 0; i < analyzers.Length; i++)
-            {
-                analyzers[i].Initialize(true);
-                if (analyzerStates[i] != null)
-                {
-                    analyzers[i].CurrentState = analyzerStates[i];
-                }
-
-                if (nlAnalyzerStates[i] != null)
-                {
-                    nlAnalyzers[i].CurrentState = nlAnalyzerStates[i];
-                }
-            }
         }
 
-        public static Model CreateElasticModelFromComsolFile(ComsolMeshReader reader, double miNormal, double kappaNormal, double miTumor, double kappaTumor, Dictionary<int, double> lambda)
+        //public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
+        //{
+        //    //Changed this
+        //    //Dictionary<int, double> lambda = new Dictionary<int, double>(reader.ElementConnectivity.Count());
+        //    ////Dictionary<int, double> lambda = new Dictionary<int, double>();
+        //    //foreach (var elem in reader.ElementConnectivity)
+        //    //{
+        //    //    lambda.Add(elem.Key, elem.Value.Item3 == 0 ? CalculateLambda(CurrentTimeStep * timeStep) : 1d);
+        //    //}
+
+        //    var model = new Model[] { CreateElasticModelFromComsolFile(reader, miNormal, kappaNormal, miTumor, kappaTumor, lambda,density), };
+        //    var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
+        //    var algebraicModel = new[] { solverFactory.BuildAlgebraicModel(model[0]), };
+        //    solvers[0] = solverFactory.BuildSolver(algebraicModel[0]);
+        //    var problem = new[] { new ProblemStructural(model[0], algebraicModel[0]), };
+        //    var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder( algebraicModel[0], solvers[0], problem[0], numIncrements: nrIncrements)
+        //    {
+        //        ResidualTolerance = 1E-4,
+        //        MaxIterationsPerIncrement = 1000,
+        //        NumIterationsForMatrixRebuild = 1
+        //    };
+        //    nlAnalyzers[0] = loadControlAnalyzerBuilder.Build();
+        //    var loadControlAnalyzer = (LoadControlAnalyzer)nlAnalyzers[0];
+        //    loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(
+        //        new List<(INode node, IDofType dof)>()
+        //        {
+        //            (model[0].NodesDictionary[333], StructuralDof.TranslationX),
+        //            (model[0].NodesDictionary[333], StructuralDof.TranslationY),
+        //            (model[0].NodesDictionary[333], StructuralDof.TranslationZ),
+
+        //        }, algebraicModel[0]
+        //    );
+
+        //    analyzers[0] = (new PseudoTransientAnalyzer.Builder( algebraicModel[0], problem[0], loadControlAnalyzer, timeStep: timeStep, totalTime: totalTime, currentStep: CurrentTimeStep)).Build();
+
+        //    //Sparse tet Mesh
+        //    var watchDofs = new[]
+        //    {
+        //        new List<(INode node, IDofType dof)>()
+        //        {
+        //            (model[0].NodesDictionary[333], StructuralDof.TranslationX),
+        //            (model[0].NodesDictionary[333], StructuralDof.TranslationY),
+        //            (model[0].NodesDictionary[333], StructuralDof.TranslationZ),
+        //        }
+        //    };
+
+
+        //    //Print the coordinates of the watchdof for comsol comparison
+        //    //Console.WriteLine("DOF :" + model[0].NodesDictionary[13].ID + " X: " + model[0].NodesDictionary[13].X + " Y: " + model[0].NodesDictionary[13].Y + " Z: " + model[0].NodesDictionary[13].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[13]);
+        //    //Console.WriteLine("DOF :" + model[0].NodesDictionary[333].ID + " X: " + model[0].NodesDictionary[333].X + " Y: " + model[0].NodesDictionary[333].Y + " Z: " + model[0].NodesDictionary[333].Z + " Time: " + currentTimeStep * timeStep + " lambda: " + lambda[333]);
+
+        //    loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel[0]);
+
+        //    for (int i = 0; i < analyzers.Length; i++)
+        //    {
+        //        analyzers[i].Initialize(true);
+        //        if (analyzerStates[i] != null)
+        //        {
+        //            analyzers[i].CurrentState = analyzerStates[i];
+        //        }
+
+        //        if (nlAnalyzerStates[i] != null)
+        //        {
+        //            nlAnalyzers[i].CurrentState = nlAnalyzerStates[i];
+        //        }
+        //    }
+        //}
+
+        public Model CreateElasticModelFromComsolFile()
+        {
+            return CreateModelFromComsolFile(reader, miNormal, kappaNormal, miTumor, kappaTumor, lambda, density);
+        }
+
+        public static Model CreateModelFromComsolFile(ComsolMeshReader reader, double miNormal, double kappaNormal, double miTumor, double kappaTumor, Dictionary<int, double> lambda, double density)
         {
             var nodes = reader.NodesDictionary;
             var model = new Model();
@@ -154,7 +176,123 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var materialTumor = new NeoHookeanMaterial3dJ3Isochoric(miTumor, kappaTumor);
 
             var elasticMaterial = new ElasticMaterial3D(youngModulus: 1, poissonRatio: 0.3);
-            var DynamicMaterial = new TransientAnalysisProperties(density: 1, rayleighCoeffMass: 0, rayleighCoeffStiffness: 0);
+            var DynamicMaterial = new TransientAnalysisProperties(density: density, rayleighCoeffMass: 0, rayleighCoeffStiffness: 0);
+            var elementFactory = new ContinuumElement3DFactory(elasticMaterial, DynamicMaterial);
+
+            //var domains = new Dictionary<int, double[]>(2);
+            foreach (var elementConnectivity in reader.ElementConnectivity)
+            {
+                var domainId = elementConnectivity.Value.Item3;
+                var element = elementFactory.CreateNonLinearElementGrowt(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2, domainId == 0 ? materialTumor : materialNormal, DynamicMaterial, lambda[elementConnectivity.Key]);
+                model.ElementsDictionary.Add(elementConnectivity.Key, element);
+                model.SubdomainsDictionary[0].Elements.Add(element);
+            }
+
+            
+
+            return model;
+        }
+
+        public void AddBottomBCs(Model model, double modelMaxZ, double modelMinZ)
+        {
+
+            var topNodes = new List<INode>();
+            var bottomNodes = new List<INode>();
+            var innerBulkNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxZ - node.Z) < 1E-9) topNodes.Add(node);
+                else if (Math.Abs(modelMinZ - node.Z) < 1E-9) bottomNodes.Add(node);
+                else innerBulkNodes.Add(node);
+            }
+
+
+
+            var constraints = new List<INodalDisplacementBoundaryCondition>();
+            foreach (var node in topNodes)
+            {
+                //constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
+            }
+            foreach (var node in bottomNodes)
+            {
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
+            }
+
+            var emptyloads = new List<INodalLoadBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
+
+        }
+
+        public void AddStaticNodalLoadsTopNodes(Model model, double modelMaxZ, double modelMinZ)
+        {
+            var emptyConstraintsconstraints = new List<INodalDisplacementBoundaryCondition>();
+            var loads = new List<INodalLoadBoundaryCondition>();
+
+
+            //var topNodes = new List<INode>();
+            //var bottomNodes = new List<INode>();
+            //var innerBulkNodes = new List<INode>();
+            //foreach (var node in model.NodesDictionary.Values)
+            //{
+            //    if (Math.Abs(modelMaxZ - node.Z) < 1E-9) topNodes.Add(node);
+            //    else if (Math.Abs(modelMinZ - node.Z) < 1E-9) bottomNodes.Add(node);
+            //    else innerBulkNodes.Add(node);
+            //}
+
+            //foreach (var node in topNodes)
+            //{
+            //    loads.Add(new NodalLoad(node, loadedDof, amount: load_value));
+            //}
+
+            INode maxDistanceNode = null;
+            double currentMaxDistance = 0;
+            foreach (INode node in model.NodesDictionary.Values)
+            {
+                double distance = Math.Sqrt(Math.Pow(node.X, 2) + Math.Pow(node.Y, 2) + Math.Pow(node.Z, 2));
+                if (distance > currentMaxDistance)
+                {
+                    currentMaxDistance = distance;
+                    maxDistanceNode = node;
+                }
+            }
+
+            loadedNodeId = maxDistanceNode.ID;
+
+            loads.Add(new NodalLoad
+            (
+                maxDistanceNode,
+                loadedDof,
+                amount: load_value
+            ));
+
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraintsconstraints, loads));
+        }
+
+
+
+
+        public static Model CreateElasticModelFromComsolFile(ComsolMeshReader reader, double miNormal, double kappaNormal, double miTumor, double kappaTumor, Dictionary<int, double> lambda,double density)
+        {
+            var nodes = reader.NodesDictionary;
+            var model = new Model();
+            model.SubdomainsDictionary[0] = new Subdomain(id: 0);
+
+            foreach (var node in nodes.Values)
+            {
+                model.NodesDictionary.Add(node.ID, node);
+            }
+
+            //(double ENormal, double poissonNormal) = GetElasticModelParameters(miNormal, kappaNormal);
+            //(double ETumor, double poissonTumor) = GetElasticModelParameters(miTumor, kappaTumor);
+            //var materialNormal = new ElasticMaterial3DDefGrad(ENormal, poissonNormal);
+            //var materialTumor = new ElasticMaterial3DDefGrad(ETumor, poissonTumor);
+            var materialNormal = new NeoHookeanMaterial3dJ3Isochoric(miNormal, kappaNormal);
+            var materialTumor = new NeoHookeanMaterial3dJ3Isochoric(miTumor, kappaTumor);
+
+            var elasticMaterial = new ElasticMaterial3D(youngModulus: 1, poissonRatio: 0.3);
+            var DynamicMaterial = new TransientAnalysisProperties(density: density, rayleighCoeffMass: 0, rayleighCoeffStiffness: 0);
             var elementFactory = new ContinuumElement3DFactory(elasticMaterial, DynamicMaterial);
 
             //var domains = new Dictionary<int, double[]>(2);

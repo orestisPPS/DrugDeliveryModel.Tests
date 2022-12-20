@@ -105,8 +105,11 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
-            var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder( algebraicModel, problem, linearAnalyzer, timeStep: 1, totalTime: 10, bdfOrder: 5);
+            //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder( algebraicModel, problem, linearAnalyzer, timeStep: 1, totalTime: 10, bdfOrder: 5);
+            //var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: 1, totalTime: 10);
             var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
+
 
             var watchDofs = new List<(INode node, IDofType dof)>()
             {
