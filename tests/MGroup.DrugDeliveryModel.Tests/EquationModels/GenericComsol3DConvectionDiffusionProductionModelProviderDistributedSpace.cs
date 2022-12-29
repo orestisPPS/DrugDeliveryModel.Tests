@@ -31,7 +31,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
         public Model CreateModelFromComsolFile(Dictionary<int, double[]> convectionCoeffs,
             double diffusionCoeff, Dictionary<int, double> dependentProductionCoeffs,
-            Dictionary<int, double> independentProductionCoeffs, double capacityCoeff)
+            Dictionary<int, double> independentProductionCoeffs, double capacityCoeff,
+            Func<double, double> productionFunc = null, Func<double, double> productionDeriv = null)
         {
             ConvectionCoeffs = convectionCoeffs;
             DiffusionCoeff = diffusionCoeff;
@@ -53,15 +54,23 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
             foreach (var elementConnectivity in reader.ElementConnectivity)
             {
+
                 var material = new ConvectionDiffusionProperties(
                 capacityCoeff: CapacityCoeff,
                 diffusionCoeff: DiffusionCoeff,
                 convectionCoeff: ConvectionCoeffs[elementConnectivity.Key],
-                dependentSourceCoeff: DependentProductionCoeffs[elementConnectivity.Key],
+                dependentSourceCoeff: productionDeriv != null? 0  :DependentProductionCoeffs[elementConnectivity.Key],
                 independentSourceCoeff: IndependentProductionCoeffs[elementConnectivity.Key]);
 
                 var elementFactory = new ConvectionDiffusionElement3DFactory(material);
                 var element = elementFactory.CreateElement(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2);
+                if(productionDeriv != null)
+                {
+                    element.LinearProduction = false;
+                    element.ProductionFunction = productionFunc;
+                    element.ProductionFunctionDerivative = productionDeriv;
+
+                }
                 model.ElementsDictionary.Add(elementConnectivity.Key, element);
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
@@ -110,7 +119,78 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
         }
 
-        public void AddInitialConditionsForTheRestOfBulkNodes(Model model, double modelMaxZ, double modelMinZ, double prescribedInitialConditionValueForBulk)
+        public void AddZplusBCs(Model model, double modelMaxZ, double topValueprescribed)
+        {
+
+            var topNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxZ - node.Z) < 1E-9) topNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in topNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, topValueprescribed));
+            }
+            
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
+        public void AddXplusBCs(Model model, double modelMaxX, double ValueprescribedformaxXcoord)
+        {
+
+            var maxXCoordNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxX - node.X) < 1E-9) maxXCoordNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in maxXCoordNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, ValueprescribedformaxXcoord));
+            }
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
+        public void AddYplusBCs(Model model, double modelMaxX, double ValueprescribedformaxXcoord)
+        {
+
+            var maxXCoordNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxX - node.X) < 1E-9) maxXCoordNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in maxXCoordNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, ValueprescribedformaxXcoord));
+            }
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
+
+
+        public void AddInitialConditionsForTheRestOfBulkNodesMInusTopAndBottom(Model model, double modelMaxZ, double modelMinZ, double prescribedInitialConditionValueForBulk)
         {
 
             var topNodes = new List<INode>();

@@ -32,7 +32,19 @@ namespace MGroup.FEM.ConvectionDiffusion.Tests.Integration
             double[] prescribedSolution = new double[] { 113.24999999999996 }; // [1, 1, 1] node id 13
             double tolerance = 1E-6;
 
-            var model = Comsol3DComsolMesh.CreateModelFromComsolFile("../../../DataFiles/3d8Hexa.mphtxt", capacityCoeff, diffusionCoeff, convectionCoeff, dependentSourceCoeff, independentSourceCoeff);
+            Func<double, double> ProductionFunction = new Func<double, double>( phi => dependentSourceCoeff * phi );
+            Func<double, double> ProductionFunctionDerivative = new Func<double, double>(phi => dependentSourceCoeff);
+            //{
+            //	return material.DependentSourceCoeff * phi;
+            //}
+
+            //public double ProductionFunctionDerivative(double phi)
+            //{
+            //	return material.DependentSourceCoeff;
+            //}
+
+            var model = Comsol3DComsolMesh.CreateModelFromComsolFileNonLinear("../../../DataFiles/3d8Hexa.mphtxt", capacityCoeff, diffusionCoeff, convectionCoeff,  independentSourceCoeff,
+                ProductionFunction, ProductionFunctionDerivative);
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false};
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);

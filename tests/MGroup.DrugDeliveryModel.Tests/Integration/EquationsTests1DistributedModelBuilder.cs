@@ -77,7 +77,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusion,
                 DependentProductionCoeffs, IndependentProductionCoeffs, capacity);
             modelProvider.AddTopAndBottomBCs(model, 0.1, 1, 0, 1);
-            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 0.1, 0, 1);
+            modelProvider.AddInitialConditionsForTheRestOfBulkNodesMInusTopAndBottom(model, 0.1, 0, 1);
 
 
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; //Dense Matrix Solver solves with zero matrices!
@@ -169,7 +169,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusion,
                 DependentProductionCoeffs, IndependentProductionCoeffs, capacity);
             modelProvider.AddTopAndBottomBCs(model, 0.1, T_initial, 0, T_initial);
-            modelProvider.AddInitialConditionsForTheRestOfBulkNodes(model, 0.1, 0, T_initial);
+            modelProvider.AddInitialConditionsForTheRestOfBulkNodesMInusTopAndBottom(model, 0.1, 0, T_initial);
 
 
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; 
