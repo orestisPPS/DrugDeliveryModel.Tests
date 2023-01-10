@@ -33,15 +33,15 @@ namespace MGroup.DrugDeliveryModel.Tests.TemplateModel
 		//Oi parametroi tou mondelou kai twn constrains  allazoun sto modelBuilder dld PlateRevisitedLessConstrainted
 
 		const double Sc = 0.1;
-		
+
 
 		static double miNormal = 5; //KPa
 		static double kappaNormal = 6.667; //Kpa
 		static double miTumor = 22.44; //Kpa
-		static double kappaTumor = 201.74; //Kpa
+		static double kappaTumor = 216.7; //Kpa
 		static int currentTimeStep = 0;
 		static double lambda0 = 1;
-		static double density = 1;
+		static double density = 1; //ton/m3
 		static StructuralDof loadedDof= StructuralDof.TranslationX;
 		static double load_value =0.01;
 		static int loadedNodeId;
