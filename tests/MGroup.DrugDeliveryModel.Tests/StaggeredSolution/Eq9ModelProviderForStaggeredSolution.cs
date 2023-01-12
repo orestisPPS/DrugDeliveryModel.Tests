@@ -23,18 +23,22 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
     {
        
 
-        private double sc = 0.1;
-        private double miNormal = 5;//KPa
-        private double kappaNormal = 6.667; //Kpa
-        private double miTumor = 22.44; //Kpa
-        private double kappaTumor = 201.74; //Kpa
+        //private double sc = 0.1;
+        private double miNormal;// = 5;//KPa
+        private double kappaNormal;// = 6.667; //Kpa
+        private double miTumor;// = 22.44; //Kpa
+        private double kappaTumor;// = 216.7; //Kpa
+        private StructuralDof loadedDof;
+        private double load_value;
+
+
         private ComsolMeshReader reader;
        
         private Dictionary<int, double> lambda;
         Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints;
 
         private int nodeIdToMonitor; //TODO put it where it belongs (coupled7and9eqsSolution.cs)
-        private StructuralDof LoadedDof;
+        private StructuralDof dofTypeToMonitor;
         
 
         private double modelMaxZ;
@@ -43,13 +47,15 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         private double bottomValueprescribed;
 
 
+
+
         public Eq9ModelProviderForStaggeredSolution(ComsolMeshReader comsolReader, double sc, double miNormal, double kappaNormal, double miTumor,
             double kappaTumor, double timeStep, double totalTime,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             double modelMaxZ, double topValueprescribed, double modelMinZ, double bottomValueprescribed,
-            int nodeIdToMonitor, StructuralDof dofTypeToMonitor)
+            int nodeIdToMonitor, StructuralDof dofTypeToMonitor, StructuralDof loadedDof, double load_value)
         {
-            this.sc = sc;
+            //this.sc = sc;
             this.miNormal = miNormal;
             this.kappaNormal = kappaNormal;
             this.miTumor = miTumor;
@@ -66,7 +72,11 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
             //log
             this.nodeIdToMonitor = nodeIdToMonitor;
-            this.LoadedDof = dofTypeToMonitor;
+            this.dofTypeToMonitor = dofTypeToMonitor;
+
+            //Load
+            this.loadedDof = loadedDof;
+            this.load_value = load_value;
 
         }
 
@@ -156,8 +166,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             loads.Add(new NodalLoad
             (
                 maxDistanceNode,
-                StructuralDof.TranslationX,
-                amount: 0.00000001
+                loadedDof,
+                amount: load_value
             ));
 
             var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
@@ -183,7 +193,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(
                 new List<(INode node, IDofType dof)>()
                 {
-                    (model.NodesDictionary[nodeIdToMonitor], LoadedDof),
+                    (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
                     
 
                 }, algebraicModel
@@ -196,7 +206,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             {
                 new List<(INode node, IDofType dof)>()
                 {
-                    (model.NodesDictionary[nodeIdToMonitor], LoadedDof),
+                    (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
                     //(model[0].NodesDictionary[333], StructuralDof.TranslationY),
                     //(model[0].NodesDictionary[333], StructuralDof.TranslationZ),
                 }

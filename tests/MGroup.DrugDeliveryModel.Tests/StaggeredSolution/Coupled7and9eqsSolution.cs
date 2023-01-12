@@ -25,11 +25,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         const double totalTime = 10; // in days
         static int incrementsPertimeStep = 1;
 
+        // strucutral model Loads
+        static StructuralDof loadedDof = StructuralDof.TranslationX;
+        static double load_value = 0.01;
+
+
         //structural model properties
         static double miNormal = 5; //KPa
         static double kappaNormal = 6.667; //Kpa
         static double miTumor = 22.44; //Kpa
-        static double kappaTumor = 201.74; //Kpa
+        static double kappaTumor = 216.7; //Kpa
         static int currentTimeStep = 0;
         static double lambda0 = 1;
         int nGaussPoints = 1;
@@ -100,7 +105,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
            var eq78model = new Eq78ModelProviderForStaggeredSolution(comsolReader, k_th, Lp, Sv, pv, LplSvl, pl, velocityDivergenceAtElementGaussPoints, 
                 modelMaxZ, topValueprescribed, modelMinZ, bottomValueprescribed, nodeIdToMonitor, eq7n8dofTypeToMonitor);
             var eq9model = new Eq9ModelProviderForStaggeredSolution(comsolReader, Sc, miNormal, kappaNormal, miTumor, kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
-                eq9modelMaxZ, eq9topValueprescribed, eq9modelMinZ, eq9bottomValueprescribed, eq9nodeIdToMonitor, eq9dofTypeToMonitor);
+                eq9modelMaxZ, eq9topValueprescribed, eq9modelMinZ, eq9bottomValueprescribed, eq9nodeIdToMonitor, eq9dofTypeToMonitor,loadedDof,load_value);
 
 
             var equationModel = new Coupled7and9eqsModel(eq78model, eq9model, comsolReader, lambda,

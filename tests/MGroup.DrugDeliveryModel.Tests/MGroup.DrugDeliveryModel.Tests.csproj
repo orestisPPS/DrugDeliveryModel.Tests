@@ -34,4 +34,7 @@
     <ProjectReference Include="..\..\..\NumericalAnalyzers\src\MGroup.NumericalAnalyzers\MGroup.NumericalAnalyzers.csproj" />
     <ProjectReference Include="..\..\..\Solvers\src\MGroup.Solvers\MGroup.Solvers.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="PreliminaryModels\" />
+  </ItemGroup>
 </Project>
