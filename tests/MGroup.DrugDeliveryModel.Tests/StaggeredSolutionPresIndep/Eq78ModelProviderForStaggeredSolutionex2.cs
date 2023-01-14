@@ -18,11 +18,17 @@ using MGroup.Constitutive.ConvectionDiffusion;
 using MGroup.FEM.ConvectionDiffusion.Tests.Commons;
 using MGroup.MSolve.AnalysisWorkflow;
 using MGroup.MSolve.Solution;
+using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
 	public class Eq78ModelProviderForStaggeredSolutionex2
     {
+        
+        private double modelMinX;
+        private double modelMaxX;
+        private double modelMinY;
+        private double modelMaxY;
         private double Sv ;
         private double k_th ;
         private double pv ;
@@ -42,7 +48,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         public Eq78ModelProviderForStaggeredSolutionex2(ComsolMeshReader modelReader,
             double kth, double Lp, double Sv, double pv, double LplSvl, double pl, Dictionary<int, double[]> div_vs,
             double modelMaxZ, double topValueprescribed, double modelMinZ, double bottomValueprescribed,
-            int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor )
+            int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor
+            , double modelMinX, double modelMaxX, double modelMinY, double modelMaxY)
         {
 
             this.Sv = Sv;
@@ -64,6 +71,15 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //log
             this.nodeIdToMonitor = nodeIdToMonitor;
             this.dofTypeToMonitor = dofTypeToMonitor;
+
+            
+
+            this.modelMinX = modelMinX;
+            this.modelMaxX = modelMaxX;
+            this.modelMinY = modelMinY;
+            this.modelMaxY = modelMaxY;
+
+
         }
 
         public Model GetModel() //ORIGIN: SolveEquation7and8ofUpdatedReportStaticZeroPseudoTransientAnalyzer
@@ -71,9 +87,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //prosarmogh onomatwn metavltwn analoga tnn exisws tou word
             double convectionCoeff = 0;
             double capacity = 0;
-            double dependentProductionCoeff = -(Lp * Sv + LplSvl);
+            double dependentProductionCoeff = -1;
             //double independentSource = Lp * Sv * pv + LplSvl * pl - div_vs;
-            double diffusion = k_th;
+            double diffusion = 0;// kth;
 
             //  initiallize dictionaries of coefficients
             Dictionary<int, double[]> ConvectionCoeffs = new Dictionary<int, double[]>();//=> new[]  {1d, 1d, 1d};               
@@ -84,8 +100,11 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             {
                 ConvectionCoeffs[elementConnectivity.Key] = new double[] { convectionCoeff, convectionCoeff, convectionCoeff };
                 DependentProductionCoeffs[elementConnectivity.Key] = dependentProductionCoeff;
-                var independentSource = Lp * Sv * pv + LplSvl * pl - div_vs[elementConnectivity.Key][0]; //TODO [0] is the first gauss point Make it more genreal for all guss paints
-                IndependentProductionCoeffs[elementConnectivity.Key] = independentSource;
+                var nodes = elementConnectivity.Value.Item2;
+                List<double> nodesZCoord = nodes.Select(x => modelReader.NodesDictionary[x.ID].Z).ToList();
+                double centroidValue1 = FindCentroidPrescribedValue(nodesZCoord, modelMaxZ, topValueprescribed, modelMinZ, bottomValueprescribed, modelMinX, modelMaxX,modelMinY, modelMaxY);
+                //double centroidValue1 = FindCentroidPrescribedValue(nodesZCoord, 0.1, topPressure, 0, bottomPressure, 0, 0.1, 0, 0.1);
+                IndependentProductionCoeffs[elementConnectivity.Key] = centroidValue1;
             }
 
             //initialize mpdel provider solution
@@ -95,6 +114,79 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 DependentProductionCoeffs, IndependentProductionCoeffs, capacity);
 
             return model;
+
+        }
+
+        public void AddTopAndBottomBCsDistributedPeripheral(Model model)
+        {
+
+            var topNodes = new List<INode>();
+            var bottomNodes = new List<INode>();
+            var leftNodes = new List<INode>();
+            var rightNodes = new List<INode>();
+            var frontNodes = new List<INode>();
+            var backNodes = new List<INode>();
+
+            var innerBulkNodes = new List<INode>();
+            double tol = 1E-5;
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxZ - node.Z) < tol) topNodes.Add(node);
+                else if (Math.Abs(modelMinZ - node.Z) < tol) bottomNodes.Add(node);
+
+                else if (Math.Abs(modelMinX - node.X) < tol) leftNodes.Add(node);
+                else if (Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
+
+                else if (Math.Abs(modelMinY - node.Y) < tol) frontNodes.Add(node);
+                else if (Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
+                else innerBulkNodes.Add(node);
+            }
+
+
+            var totalPeripheralNodes = leftNodes.Union(rightNodes).Union(frontNodes).Union(backNodes);
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in topNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, topValueprescribed));
+            }
+            foreach (var node in bottomNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, bottomValueprescribed));
+            }
+            foreach (var node in totalPeripheralNodes)
+            {
+                double parametricPosition = (node.Z - modelMinZ) / (modelMaxZ - modelMinZ);
+                double peripheralPrescribedParValue = bottomValueprescribed + parametricPosition * (topValueprescribed - bottomValueprescribed);
+
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, peripheralPrescribedParValue));
+            }
+
+
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
+        public double FindCentroidPrescribedValue(List<double> nodeZs, double modelMaxZ, double topValueprescribed, double modelMinZ, double bottomValueprescribed, double modelMinX, double modelMaxX, double modelMinY, double modelMaxY)
+        {
+            double centroidValue = 0;
+
+            foreach (var nodeZ in nodeZs)
+            {
+                double parametricPosition = (nodeZ - modelMinZ) / (modelMaxZ - modelMinZ);
+                double peripheralPrescribedParValue = bottomValueprescribed + parametricPosition * (topValueprescribed - bottomValueprescribed);
+                centroidValue = centroidValue + peripheralPrescribedParValue;
+            }
+
+            centroidValue = centroidValue / nodeZs.Count;
+            return centroidValue;
+
+
 
         }
 

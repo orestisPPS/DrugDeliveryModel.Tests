@@ -22,7 +22,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
     {
         const double Sc = 0.1;
         const double timeStep = 1; // in days
-        const double totalTime = 10; // in days
+        const double totalTime = 1.2; // in days
         static int incrementsPertimeStep = 1;
 
         // strucutral model Loads
@@ -44,9 +44,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         //Structural BCs . Not alla of these values are used but the ones used will be put here.
         static double eq9modelMaxZ = 0.1;
-        static double eq9topValueprescribed = 1;
+        static double eq9topValueprescribed = 0.2;// kPa;
         static double eq9modelMinZ = 0;
-        static double eq9bottomValueprescribed = 1;
+        static double eq9bottomValueprescribed = 0.1;//KPa
         static int eq9nodeIdToMonitor = 36;
         static StructuralDof eq9dofTypeToMonitor = StructuralDof.TranslationX;
 
@@ -60,11 +60,19 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double div_vs = 1e-6;// 1/(sec)
         static int nodeIdToMonitor = 36;
         static ConvectionDiffusionDof eq7n8dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
+        
         //Darcy of BCs
         static double modelMaxZ=0.1;
-        static double topValueprescribed=1;
+        static double topValueprescribed=0.2;
         static double modelMinZ=0;
-        static double bottomValueprescribed=1;
+        static double bottomValueprescribed=0.1;
+
+        static double modelMinX=0;
+        static double modelMaxX=0.1;
+        static double modelMinY=0;
+        static double modelMaxY=0.1;
+
+
 
         public Coupled7and9eqsSolutionex2()
 		{
@@ -103,7 +111,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
            var eq78model = new Eq78ModelProviderForStaggeredSolutionex2(comsolReader, k_th, Lp, Sv, pv, LplSvl, pl, velocityDivergenceAtElementGaussPoints, 
-                modelMaxZ, topValueprescribed, modelMinZ, bottomValueprescribed, nodeIdToMonitor, eq7n8dofTypeToMonitor);
+                modelMaxZ, topValueprescribed, modelMinZ, bottomValueprescribed, nodeIdToMonitor, eq7n8dofTypeToMonitor, modelMinX, modelMaxX, modelMinY, modelMaxY);
             var eq9model = new Eq9ModelProviderForStaggeredSolutionex2(comsolReader, Sc, miNormal, kappaNormal, miTumor, kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
                 eq9modelMaxZ, eq9topValueprescribed, eq9modelMinZ, eq9bottomValueprescribed, eq9nodeIdToMonitor, eq9dofTypeToMonitor,loadedDof,load_value);
 

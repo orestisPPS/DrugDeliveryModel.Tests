@@ -91,7 +91,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
         {
-            // initialize Shared quantities of Coupled model
+            //---------------------------------------
+            // WARNING: do not initialize shared dictionarys because they have been passed by refernce in ewuationModel bilders.
+            //---------------------------------------
+
+
+            // update Shared quantities of Coupled model
             //foreach (var elem in reader.ElementConnectivity)
             //{ 
             //    lambda[elem.Key]= lambda0;
@@ -112,7 +117,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
             model[0] = Eq78ModelProvider.GetModel();
-            Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
+            //Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
+            Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
             (analyzers[0], solvers[0], nlAnalyzers[0]) = Eq78ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             //TODo
@@ -144,7 +150,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
             model[0] = Eq78ModelProvider.GetModel();
-            Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
+            //Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
+            Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
             (analyzers[0], solvers[0], nlAnalyzers[0]) = Eq78ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             //TODo

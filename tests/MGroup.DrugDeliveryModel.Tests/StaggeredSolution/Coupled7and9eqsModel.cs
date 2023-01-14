@@ -91,7 +91,11 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
         {
-            // initialize Shared quantities of Coupled model
+            //---------------------------------------
+            // WARNING: do not initialize shared dictionarys because they have been passed by refernce in ewuationModel bilders.
+            //---------------------------------------
+
+            // Update Shared quantities of Coupled model
             //foreach (var elem in reader.ElementConnectivity)
             //{ 
             //    lambda[elem.Key]= lambda0;
