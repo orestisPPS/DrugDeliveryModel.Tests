@@ -29,7 +29,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         private double miTumor;// = 22.44; //Kpa
         private double kappaTumor;// = 216.7; //Kpa
         private StructuralDof loadedDof;
-        private double load_value;
+        public double load_value { get; private set; }
 
 
         private ComsolMeshReader reader;
@@ -244,8 +244,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 new List<(INode node, IDofType dof)>()
                 {
                     (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
-                    //(model[0].NodesDictionary[333], StructuralDof.TranslationY),
-                    //(model[0].NodesDictionary[333], StructuralDof.TranslationZ),
+                    (model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationY),
+                    (model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationZ),
                 }
             };
 

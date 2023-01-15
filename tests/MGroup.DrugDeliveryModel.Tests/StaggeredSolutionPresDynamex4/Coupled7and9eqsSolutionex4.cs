@@ -30,7 +30,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         // strucutral model Loads
         static StructuralDof loadedDof = StructuralDof.TranslationX;
-        static double load_value = 0.01;
+        static double load_value = 0.00;
 
 
         //structural model properties
@@ -122,12 +122,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var equationModel = new Coupled7and9eqsModelex4(eq78model, eq9model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep, totalTime, incrementsPertimeStep);
 
+            #region loggin
+            var p_i = new double[(int)(totalTime / timeStep)];
+            double[] structuralResultsX = new double[(int)(totalTime / timeStep)]; double[] structuralResultsY = new double[(int)(totalTime / timeStep)]; double[] structuralResultsZ = new double[(int)(totalTime / timeStep)];
+            double[] modelMaxVelDivOverTime = new double[(int)(totalTime / timeStep)];
+            double[] modelMax_dP_dxOverTime = new double[(int)(totalTime / timeStep)];
+            #endregion
 
-            //var equationModel = new MonophasicEquationModel(fileName, Sc, miNormal, kappaNormal, miTumor, kappaTumor, timeStep, totalTime, lambda0);
-            var u1X = new double[(int)(totalTime / timeStep)];
-            var u1Y = new double[(int)(totalTime / timeStep)];
-            var u1Z = new double[(int)(totalTime / timeStep)];
-            double[] structuralResults = new double[(int)(totalTime / timeStep)];
 
             var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers, equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance: 0.001);
             for (currentTimeStep = 0; currentTimeStep < totalTime / timeStep; currentTimeStep++)
@@ -139,13 +140,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 #region logging
                 // Edw ginetai access to antikeimeno LinearAnalyzerLogFactory tou loadcontrolAnalyzer pou kata th dhmiourgia tou to eixame perasei sto LogFactory
                 var allValues = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray();
+                p_i[currentTimeStep] = allValues[0];
+                
+                structuralResultsX[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray()[0];
+                structuralResultsY[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray()[1];
+                structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray()[2];
 
-                u1X[currentTimeStep] = allValues[0];
-                //u1Y[currentTimeStep] = allValues[1];
-                //u1Z[currentTimeStep] = allValues[2];
+                modelMaxVelDivOverTime[currentTimeStep] = velocityDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0])).ToArray().Max();
 
-                allValues = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray();
-                structuralResults[currentTimeStep] = allValues[0];
+                modelMax_dP_dxOverTime[currentTimeStep] = pressureTensorDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0][0])).ToArray().Max();
+
 
                 if (Solution.ContainsKey(currentTimeStep))
                 {
@@ -178,6 +182,19 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
                 Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
             }
+
+            double pr = 1;
+            double Fval = 0;
+            double Fval_e =0;
+            //eq9model.load_value;
+            
+
+            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsX, $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex4\pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_u_{1}_.txt");
+            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsY, $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex4\pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_u_{2}_.txt");
+            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsZ, $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex4\pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_u_{3}_.txt");
+            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(modelMaxVelDivOverTime, $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex4\pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_modelMaxVelDivOverTime.txt");
+            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsZ, $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex4\pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_modelMax_dP_dx{3}OverTime.txt");
+
         }
 
         public void inspectMethodAllElemmentGradients(int increment, Model model)

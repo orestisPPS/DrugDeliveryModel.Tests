@@ -106,7 +106,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 //---------------
                 //no coupling commented out update of shared quantities
                 //
-                //pressureTensorDivergenceAtElementGaussPoints[elem.Key] = ((ConvectionDiffusionElement3D)model[0].ElementsDictionary[elem.Key]).pressureTensorDivergenceAtGaussPoints;
+                pressureTensorDivergenceAtElementGaussPoints[elem.Key] = ((ConvectionDiffusionElement3D)model[0].ElementsDictionary[elem.Key]).pressureTensorDivergenceAtGaussPoints;
             }
             foreach (var elem in reader.ElementConnectivity)
             {
