@@ -15,14 +15,17 @@ using MGroup.NumericalAnalyzers;
 using MGroup.Solvers.Direct;
 using Xunit;
 using MGroup.Constitutive.ConvectionDiffusion;
+using MGroup.FEM.ConvectionDiffusion.Isoparametric;
+using MGroup.FEM.Structural.Continuum;
+using TriangleNet.Meshing.Algorithm;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
 	public class Coupled7and9eqsSolutionex3
     {
         const double Sc = 0.1;
-        const double timeStep = 1; // in days
-        const double totalTime = 1.2; // in days
+        const double timeStep = 0.001; // in sec
+        const double totalTime = 0.008; // in sec
         static int incrementsPertimeStep = 1;
 
         // strucutral model Loads
@@ -47,7 +50,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double eq9topValueprescribed = 0.2;// kPa;
         static double eq9modelMinZ = 0;
         static double eq9bottomValueprescribed = 0.1;//KPa
-        static int eq9nodeIdToMonitor = 36;
+        static int eq9nodeIdToMonitor=36;// --> it is overwritten by the (node) automatically found loadednode 
         static StructuralDof eq9dofTypeToMonitor = StructuralDof.TranslationX;
 
         //Darcy model properties
@@ -124,6 +127,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var u1X = new double[(int)(totalTime / timeStep)];
             var u1Y = new double[(int)(totalTime / timeStep)];
             var u1Z = new double[(int)(totalTime / timeStep)];
+            double[] structuralResults = new double[(int)(totalTime / timeStep)];
 
             var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers, equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance: 0.001);
             for (currentTimeStep = 0; currentTimeStep < totalTime / timeStep; currentTimeStep++)
@@ -132,12 +136,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 equationModel.CreateModelFirstTime(equationModel.ParentAnalyzers, equationModel.ParentSolvers);
                 staggeredAnalyzer.SolveCurrentStep();
 
+                #region logging
                 // Edw ginetai access to antikeimeno LinearAnalyzerLogFactory tou loadcontrolAnalyzer pou kata th dhmiourgia tou to eixame perasei sto LogFactory
                 var allValues = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray();
 
                 u1X[currentTimeStep] = allValues[0];
                 //u1Y[currentTimeStep] = allValues[1];
                 //u1Z[currentTimeStep] = allValues[2];
+
+                allValues = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray();
+                structuralResults[currentTimeStep] = allValues[0];
 
                 if (Solution.ContainsKey(currentTimeStep))
                 {
@@ -150,10 +158,17 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                     Solution.Add(currentTimeStep, allValues);
                 }
 
-                for (int j = 0; j < equationModel.ParentAnalyzers.Length; j++)
-                {
-                    (equationModel.ParentAnalyzers[j] as PseudoTransientAnalyzer).AdvanceStep();
-                }
+
+                //Inspectall element gradients for logging
+
+                #endregion
+
+                //for (int j = 0; j < equationModel.ParentAnalyzers.Length; j++)
+                //{
+                //    (equationModel.ParentAnalyzers[j] as PseudoTransientAnalyzer).AdvanceStep();
+                //}
+                (equationModel.ParentAnalyzers[0] as PseudoTransientAnalyzer).AdvanceStep();
+                (equationModel.ParentAnalyzers[1] as NewmarkDynamicAnalyzer).AdvanceStep();
 
                 for (int j = 0; j < equationModel.ParentAnalyzers.Length; j++)
                 {
@@ -165,7 +180,39 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             }
         }
 
-        
+        public void inspectMethodAllElemmentGradients(int increment, Model model)
+        {
+            double[] xCoeefsOfElementsOverTime = new double[model.ElementsDictionary.Count];
+            double[] yCoeefsOfElementsOverTime = new double[model.ElementsDictionary.Count];
+            double[] zCoeefsOfElementsOverTime = new double[model.ElementsDictionary.Count];
+            int counter = 0;
+            foreach (var element in model.ElementsDictionary)
+            {
+                xCoeefsOfElementsOverTime[counter] = ((ConvectionDiffusionElement3D)element.Value).xcoeff_OverTimeAtGp1[increment];
+                yCoeefsOfElementsOverTime[counter] = ((ConvectionDiffusionElement3D)element.Value).ycoeff_OverTimeAtGp1[increment];
+                zCoeefsOfElementsOverTime[counter] = ((ConvectionDiffusionElement3D)element.Value).zcoeff_OverTimeAtGp1[increment];
+                counter++;
+            }
+        }
+
+        //public void inspectMethodAllElemmentGradients(/*int increment,*/ Model model)
+        //{
+        //    double[] xCoeefsOfElementsOverTime = new double[model.ElementsDictionary.Count];
+        //    double[] yCoeefsOfElementsOverTime = new double[model.ElementsDictionary.Count];
+        //    double[] zCoeefsOfElementsOverTime = new double[model.ElementsDictionary.Count];
+        //    double[] totalvalueofOfElementsOverTime = new double[model.ElementsDictionary.Count];
+        //    int counter = 0;
+        //    foreach (var element in model.ElementsDictionary)
+        //    {
+        //        xCoeefsOfElementsOverTime[counter] = ((ContinuumElement3DGrowth)element.Value).velocityDivergence[increment];
+        //        yCoeefsOfElementsOverTime[counter] = ((ConvectionDiffusionElement3D)element.Value).ycoeff_OverTimeAtGp1[increment];
+        //        zCoeefsOfElementsOverTime[counter] = ((ConvectionDiffusionElement3D)element.Value).zcoeff_OverTimeAtGp1[increment];
+        //        xCoeefsOfElementsOverTime[counter] = ((ContinuumElement3DGrowth)element.Value).velocityDivergence[increment];
+        //        counter++;
+        //    }
+        //}
+
+
 
     }
 }

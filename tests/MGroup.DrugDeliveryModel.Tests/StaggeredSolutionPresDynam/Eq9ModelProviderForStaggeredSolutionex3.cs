@@ -37,7 +37,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         private Dictionary<int, double> lambda;
         Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints;
 
-        private int nodeIdToMonitor; //TODO put it where it belongs (coupled7and9eqsSolution.cs)
+        public int nodeIdToMonitor { get; private set; } //TODO put it where it belongs (coupled7and9eqsSolution.cs)
         private StructuralDof dofTypeToMonitor;
         
 
@@ -46,8 +46,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         private double modelMinZ;
         private double bottomValueprescribed;
 
-
-
+        public int loadedNode_Id { get; private set; }
 
         public Eq9ModelProviderForStaggeredSolutionex3(ComsolMeshReader comsolReader, double sc, double miNormal, double kappaNormal, double miTumor,
             double kappaTumor, double timeStep, double totalTime,
@@ -161,6 +160,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
 
 
+            loadedNode_Id = maxDistanceNode.ID;
+            nodeIdToMonitor = loadedNode_Id;
             var loads = new List<INodalLoadBoundaryCondition>();
 
             loads.Add(new NodalLoad
@@ -174,6 +175,38 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
 
             
+        }
+
+        public void AddBottomBCs(Model model)
+        {
+
+            var topNodes = new List<INode>();
+            var bottomNodes = new List<INode>();
+            var innerBulkNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxZ - node.Z) < 1E-9) topNodes.Add(node);
+                else if (Math.Abs(modelMinZ - node.Z) < 1E-9) bottomNodes.Add(node);
+                else innerBulkNodes.Add(node);
+            }
+
+
+
+            var constraints = new List<INodalDisplacementBoundaryCondition>();
+            foreach (var node in topNodes)
+            {
+                //constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
+            }
+            foreach (var node in bottomNodes)
+            {
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
+            }
+
+            var emptyloads = new List<INodalLoadBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
+
         }
 
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog(Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
@@ -199,7 +232,11 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 }, algebraicModel
             );
 
-            var analyzer = (new PseudoTransientAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentStep: currentStep)).Build();
+            //var analyzer = (new PseudoTransientAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentStep: currentStep)).Build();
+            var analyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentStep: currentStep);
+            analyzerBuilder.SetNewmarkParametersForConstantAcceleration();
+            var analyzer = analyzerBuilder.Build();
+
 
             //Sparse tet Mesh
             var watchDofs = new[]

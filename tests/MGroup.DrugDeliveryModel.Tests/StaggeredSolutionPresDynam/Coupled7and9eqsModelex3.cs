@@ -103,7 +103,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //}
             foreach (var elem in reader.ElementConnectivity)
             {
-                pressureTensorDivergenceAtElementGaussPoints[elem.Key] = ((ConvectionDiffusionElement3D)model[0].ElementsDictionary[elem.Key]).pressureTensorDivergenceAtGaussPoints;
+                //---------------
+                //no coupling commented out update of shared quantities
+                //
+                //pressureTensorDivergenceAtElementGaussPoints[elem.Key] = ((ConvectionDiffusionElement3D)model[0].ElementsDictionary[elem.Key]).pressureTensorDivergenceAtGaussPoints;
             }
             foreach (var elem in reader.ElementConnectivity)
             {
@@ -123,7 +126,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             //TODo
             model[1] = Eq9ModelProvider.GetModel();
-            Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
+            Eq9ModelProvider.AddBottomBCs(model[1]);
+            //Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
             Eq9ModelProvider.AddEq9ModelLoads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
@@ -156,7 +160,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             //TODo
             model[1] = Eq9ModelProvider.GetModel();
-            Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
+            //Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
+            Eq9ModelProvider.AddBottomBCs(model[1]);
             Eq9ModelProvider.AddEq9ModelLoads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
