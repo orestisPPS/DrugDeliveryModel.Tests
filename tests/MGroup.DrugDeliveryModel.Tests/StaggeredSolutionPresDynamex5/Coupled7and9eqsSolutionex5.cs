@@ -24,7 +24,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 	public class Coupled7and9eqsSolutionex5
     {
         const double Sc = 0.1;
-        const double timeStep = 0.001; // in sec
+        //WARNING change time step in Continuum elements as well
+        const double timeStep = 0.0005; // in sec
         const double totalTime = 0.008; // in sec
         static int incrementsPertimeStep = 1;
 
@@ -90,6 +91,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         [InlineData("../../../DataFiles/workingTetMesh155.mphtxt")]
         public void MonophasicEquationModel(string fileName)
 		{
+            ContinuumElement3DGrowth.dT = timeStep;
+
             //Read geometry
             var comsolReader = new ComsolMeshReader(fileName);
 

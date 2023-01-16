@@ -87,9 +87,14 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //prosarmogh onomatwn metavltwn analoga tnn exisws tou word
             double convectionCoeff = 0;
             double capacity = 0;
-            double dependentProductionCoeff = -1;
+
+            double dependentProductionCoeff = -(Lp * Sv + LplSvl);
+            //double dependentProductionCoeff = -1;
+
             //double independentSource = Lp * Sv * pv + LplSvl * pl - div_vs;
-            double diffusion = 0;// kth;
+
+            double diffusion = k_th;
+           // double diffusion = 0;
 
             //  initiallize dictionaries of coefficients
             Dictionary<int, double[]> ConvectionCoeffs = new Dictionary<int, double[]>();//=> new[]  {1d, 1d, 1d};               
