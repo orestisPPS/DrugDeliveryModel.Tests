@@ -120,8 +120,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
             model[0] = Eq78ModelProvider.GetModel();
-            //Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
-            Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
+            Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
+            //Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
             (analyzers[0], solvers[0], nlAnalyzers[0]) = Eq78ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             //TODo
@@ -154,8 +154,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
             model[0] = Eq78ModelProvider.GetModel();
-            //Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
-            Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
+            Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
+            //Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
             (analyzers[0], solvers[0], nlAnalyzers[0]) = Eq78ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             //TODo

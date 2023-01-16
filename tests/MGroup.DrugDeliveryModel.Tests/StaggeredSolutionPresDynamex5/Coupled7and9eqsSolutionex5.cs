@@ -183,8 +183,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
             }
 
-            double pr = 1;
-            double Fval = 0;
+            double pr = 100;
+            double Fval =100;
             double Fval_e =0;
             //eq9model.load_value;
             

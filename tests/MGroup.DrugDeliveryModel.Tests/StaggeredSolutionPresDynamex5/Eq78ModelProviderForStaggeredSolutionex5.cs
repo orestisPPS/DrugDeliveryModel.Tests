@@ -102,9 +102,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 DependentProductionCoeffs[elementConnectivity.Key] = dependentProductionCoeff;
                 var nodes = elementConnectivity.Value.Item2;
                 List<double> nodesZCoord = nodes.Select(x => modelReader.NodesDictionary[x.ID].Z).ToList();
-                double centroidValue1 = FindCentroidPrescribedValue(nodesZCoord, modelMaxZ, topValueprescribed, modelMinZ, bottomValueprescribed, modelMinX, modelMaxX,modelMinY, modelMaxY);
-                //double centroidValue1 = FindCentroidPrescribedValue(nodesZCoord, 0.1, topPressure, 0, bottomPressure, 0, 0.1, 0, 0.1);
-                IndependentProductionCoeffs[elementConnectivity.Key] = centroidValue1;
+                //double centroidValue1 = FindCentroidPrescribedValue(nodesZCoord, modelMaxZ, topValueprescribed, modelMinZ, bottomValueprescribed, modelMinX, modelMaxX,modelMinY, modelMaxY);
+                //IndependentProductionCoeffs[elementConnectivity.Key] = centroidValue1;
+                var independentSource = Lp * Sv * pv + LplSvl * pl - div_vs[elementConnectivity.Key][0]; //TODO [0] is the first gauss point Make it more genreal for all guss paints
+                IndependentProductionCoeffs[elementConnectivity.Key] = independentSource;
             }
 
             //initialize mpdel provider solution
