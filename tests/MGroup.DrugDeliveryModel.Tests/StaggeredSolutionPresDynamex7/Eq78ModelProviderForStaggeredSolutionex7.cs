@@ -87,8 +87,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             double capacity = 0;
             double convectionCoeff = 0;
             double diffusion = k_th;
-            double dependentProductionCoeff = -(Lp * Sv);
-            
+            double dependentProductionCoeff = -(Lp * Sv + LplSvl);
+
             Dictionary<int, double[]>ConvectionCoeffs = new Dictionary<int, double[]>(); //=> new[]  {1d, 1d, 1d};               
             Dictionary<int, double> DependentProductionCoeffs = new Dictionary<int, double>();
             Dictionary<int, double> IndependentProductionCoeffs = new Dictionary<int, double>();
@@ -99,9 +99,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 DependentProductionCoeffs[elementConnectivity.Key] = dependentProductionCoeff;
                 
                 var nodes = elementConnectivity.Value.Item2;
-                
+
                 //var independentSource = Lp * Sv * pv  - div_vs[elementConnectivity.Key][0]; 
-                var independentSource = Lp * Sv * pv; 
+                //var independentSource = Lp * Sv * pv; 
+                var independentSource = Lp * Sv * pv + LplSvl * pl - div_vs[elementConnectivity.Key][0]; //TODO [0] is the first gauss point Make it more genreal for all guss paints
                 IndependentProductionCoeffs[elementConnectivity.Key] = independentSource;
             }
 
