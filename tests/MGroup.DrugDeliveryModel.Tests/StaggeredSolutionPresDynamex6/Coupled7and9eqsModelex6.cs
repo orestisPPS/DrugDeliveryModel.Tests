@@ -36,7 +36,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private IParentAnalyzer[] parentAnalyzers;
         private IChildAnalyzer[] nlAnalyzers;
         private ISolver[] parentSolvers;
-        ~
+
 
         public int CurrentTimeStep { get; set; }
 
@@ -91,43 +91,25 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
         {
-            //---------------------------------------
-            // WARNING: do not initialize shared dictionarys because they have been passed by refernce in ewuationModel bilders.
-            //---------------------------------------
-
-
-            // update Shared quantities of Coupled model
-            //foreach (var elem in reader.ElementConnectivity)
-            //{ 
-            //    lambda[elem.Key]= lambda0;
-            //}
             foreach (var elem in reader.ElementConnectivity)
             {
-                //---------------
-                //no coupling commented out update of shared quantities
-                //
                 pressureTensorDivergenceAtElementGaussPoints[elem.Key] = ((ConvectionDiffusionElement3D)model[0].ElementsDictionary[elem.Key]).pressureTensorDivergenceAtGaussPoints;
             }
             foreach (var elem in reader.ElementConnectivity)
             {
-
                 div_vs[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocityDivergence;
             }
-
-
-            //create models with them 
+            
             model = new Model[2];
-
-
+            
+            //Create model for eq78 (fluid pressure)
             model[0] = Eq78ModelProvider.GetModel();
-            Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
-            //Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
+            Eq78ModelProvider.AddAllBoundaryNodesBC(model[0]);
             (analyzers[0], solvers[0], nlAnalyzers[0]) = Eq78ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
-            //TODo
+            //Create model for eq9 (hyper-elastic material)
             model[1] = Eq9ModelProvider.GetModel();
-            Eq9ModelProvider.AddBottomBCs(model[1]);
-            //Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
+            Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
             Eq9ModelProvider.AddEq9ModelLoads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
@@ -148,20 +130,20 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void CreateModelFirstTime(IParentAnalyzer[] analyzers, ISolver[] solvers)
         {
-            //create models with initial 
-
             model = new Model[2];
-
-
+            
+            //Create Initial Model eq78 (fluid pressure)
             model[0] = Eq78ModelProvider.GetModel();
-            Eq78ModelProvider.AddEq78ModelAppropriateBCs(model[0]);
-            //Eq78ModelProvider.AddTopAndBottomBCsDistributedPeripheral(model[0]); // PROSOXH!!!! modify se duo shmeia tis BCs
+            Eq78ModelProvider.AddAllBoundaryNodesBC(model[0]);
+            if(CurrentTimeStep==0)
+            {
+                Eq78ModelProvider.AddEq78ModelInitialConditions(model[0]);
+            }
             (analyzers[0], solvers[0], nlAnalyzers[0]) = Eq78ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
-            //TODo
+            //Create model for eq9 (hyperelastic material)
             model[1] = Eq9ModelProvider.GetModel();
-            //Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
-            Eq9ModelProvider.AddBottomBCs(model[1]);
+            Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
             Eq9ModelProvider.AddEq9ModelLoads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
