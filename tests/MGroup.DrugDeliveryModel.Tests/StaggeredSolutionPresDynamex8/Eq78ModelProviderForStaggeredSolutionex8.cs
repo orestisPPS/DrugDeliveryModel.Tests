@@ -193,7 +193,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var solver = solverFactory.BuildSolver(algebraicModel);
             var provider = new ProblemConvectionDiffusion(model, algebraicModel);
 
-            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, provider, numIncrements: 2)
+            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, provider, numIncrements: 1)
             {
                 ResidualTolerance = 1E-8,
                 MaxIterationsPerIncrement = 100,
