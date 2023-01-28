@@ -139,7 +139,25 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
         }
-        
+
+        public void AddEq9ModelLoadsCenter(Model model)
+        {
+            var loads = new List<INodalLoadBoundaryCondition>();
+
+            loads.Add(new NodalLoad
+            (
+                model.NodesDictionary[nodeIdToMonitor],
+                loadedDof,
+                amount: load_value
+            ));
+
+            var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
+
+
+        }
+
+
 
         public void AddBottomLeftRightFrontBackBCs(Model model)
         {

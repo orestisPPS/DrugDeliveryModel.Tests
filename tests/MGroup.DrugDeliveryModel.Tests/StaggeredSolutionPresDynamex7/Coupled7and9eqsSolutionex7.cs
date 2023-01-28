@@ -33,8 +33,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         // strucutral model Loads
         static StructuralDof loadedDof = StructuralDof.TranslationZ;
-        static double load_value = 0; //[kN]
-
+        static double load_value = 0.0001; //[kN]
 
         //structural model properties
         static double miNormal = 5; //KPa
@@ -78,14 +77,25 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static StructuralDof eq9dofTypeToMonitor = StructuralDof.TranslationX;
 
         //Darcy model properties
+        //static double div_vs = 1e-6; // 1/(sec)
 
-        static double k_th = 7.52e-10; // m2/(KPa sec)
-        static double Sv = 7e+3; // 1/(m)
-        static double Lp = 2.7e-12; // m/(KPa sec)
+        // original case
+        //static double Sv = 7e+3; // 1/(m)
+        //static double Lp = 2.7e-12; // m/(KPa sec)
+        //static double LplSvl = 0; // 1/(KPa sec)
+        //static double pv = 4; // kPa
+        //static double pl = 0d; // KPa
+        //static double k_th = 7.52e-10; // m2/(KPa sec)
+
+
+        // simplified case
+        static double Sv = 0; // 1/(m)
+        static double Lp = 0; // m/(KPa sec)
         static double LplSvl = 0; // 1/(KPa sec)
-        static double pv = 4; // kPa
+        static double pv = 0; // kPa
         static double pl = 0d; // KPa
-        static double div_vs = 1e-6; // 1/(sec)
+        static double k_th = 7.52e-4; // m2/(KPa sec)
+
 
         //static int nodeIdToMonitor = 36;
 

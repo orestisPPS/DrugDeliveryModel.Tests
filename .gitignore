@@ -474,3 +474,5 @@ connectionStrings.json
 **/wwwroot/dist/*
 # Compiled assets
 **/wwwroot/assets/*
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex8/results1
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7/results1

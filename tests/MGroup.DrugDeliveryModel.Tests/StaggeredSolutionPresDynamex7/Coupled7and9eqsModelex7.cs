@@ -110,7 +110,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //Create model for eq9 (hyper-elastic material)
             model[1] = Eq9ModelProvider.GetModel();
             Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
-            Eq9ModelProvider.AddEq9ModelLoads(model[1]);
+            Eq9ModelProvider.AddEq9ModelLoadsCenter(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             for (int i = 0; i < analyzers.Length; i++)
@@ -130,6 +130,19 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void CreateModelFirstTime(IParentAnalyzer[] analyzers, ISolver[] solvers)
         {
+            if (!(CurrentTimeStep == 0))
+            {
+                foreach (var elem in reader.ElementConnectivity)
+                {
+                    pressureTensorDivergenceAtElementGaussPoints[elem.Key] = ((ConvectionDiffusionElement3D)model[0].ElementsDictionary[elem.Key]).pressureTensorDivergenceAtGaussPoints;
+                }
+                foreach (var elem in reader.ElementConnectivity)
+                {
+                    div_vs[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocityDivergence;
+                }
+            }
+
+
             model = new Model[2];
             
             //Create Initial Model eq78 (fluid pressure)
@@ -144,7 +157,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //Create model for eq9 (hyperelastic material)
             model[1] = Eq9ModelProvider.GetModel();
             Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
-            Eq9ModelProvider.AddEq9ModelLoads(model[1]);
+            Eq9ModelProvider.AddEq9ModelLoadsCenter(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             for (int i = 0; i < analyzers.Length; i++)
