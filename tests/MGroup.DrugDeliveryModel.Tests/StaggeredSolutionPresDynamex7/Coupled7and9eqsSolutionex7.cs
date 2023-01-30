@@ -26,8 +26,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
     {
         const double Sc = 0.1;
 
-        private const double timeStep = 0.001; // in sec
-        const double totalTime = 0.01; // in sec
+        private const double timeStep = 0.0001; // in sec
+        const double totalTime = 0.0011; // in sec
         static int incrementsPertimeStep = 1;
 
 
@@ -53,12 +53,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private static List<(INode node, IDofType dof)> watchDofs = new List<(INode node, IDofType dof)>();
 
 
-        static double pressureMonitorNodeX = 0.05;
-        static double pressureMonitorNodeY = 0.05;
-        static double pressureMonitorNodeZ = 0.05;
-
-        static double[] pressureMonitorNode = new double[]
-            { pressureMonitorNodeX, pressureMonitorNodeY, pressureMonitorNodeZ };
+        
 
         private static int pressureMonitorID;
 
@@ -70,15 +65,14 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double divPMonitorGPY = 0.05;
         static double divPMonitorGPZ = 0.05;
         
-        static double[] divPMonitorGP = new double[] { divPMonitorGPX, divPMonitorGPY, divPMonitorGPZ };
+        static double[] monitoredGPcoords = new double[] { divPMonitorGPX, divPMonitorGPY, divPMonitorGPZ };
 
         private static int divPMonitorID;
 
         static StructuralDof eq9dofTypeToMonitor = StructuralDof.TranslationX;
 
         //Darcy model properties
-        //static double div_vs = 1e-6; // 1/(sec)
-
+        
         // original case
         //static double Sv = 7e+3; // 1/(m)
         //static double Lp = 2.7e-12; // m/(KPa sec)
@@ -94,7 +88,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double LplSvl = 0; // 1/(KPa sec)
         static double pv = 0; // kPa
         static double pl = 0d; // KPa
-        static double k_th = 7.52e-4; // m2/(KPa sec)
+        static double k_th = 7.52e-5; // m2/(KPa sec)
 
 
         //static int nodeIdToMonitor = 36;
@@ -106,7 +100,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double structuralMonitorNodeY = 0.05;//0.05; einai gia artio arithmo diakritopoishshs me hexa
         static double structuralMonitorNodeZ = 0.05;//0.05; einai gia artio arithmo diakritopoishshs me hexa
 
-        static double[] structuralMonitorNode = new double[]
+        static double[] structuralMonitorNodeCoords = new double[]
             { structuralMonitorNodeX, structuralMonitorNodeY, structuralMonitorNodeZ };
 
         private static int structuralMonitorID;
@@ -137,7 +131,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         //[InlineData("../../../DataFiles/workingTetMesh648_1Domain.mphtxt")]
         //[InlineData("../../../DataFiles/workingTetMesh648_1Domain.mphtxt")]
         //[InlineData("../../../DataFiles/workingQuadMesh64_1Domain.mphtxt")]
-        [InlineData("../../../DataFiles/workingQHexaMesh6x6x6_1Domain.mphtxt")]
+        //[InlineData("../../../DataFiles/workingQHexaMesh6x6x6_1Domain.mphtxt")]
+        [InlineData("../../../DataFiles/6x6x6_tetraedral.mphtxt")]
         //[InlineData("../../../DataFiles/workingQuadMesh27_1Domain.mphtxt")]
         //[InlineData("../../../DataFiles/workingTetMesh155.mphtxt")]
         public void MonophasicEquationModel(string fileName)
@@ -182,7 +177,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             miNormal = miTumor;
             kappaNormal = kappaTumor;
-            structuralMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, structuralMonitorNode, 1e-2);
+            structuralMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, structuralMonitorNodeCoords, 1e-2);
             //pressureMonitorID = Utilities.FindRandomInternalNode(comsolReader.NodesDictionary, modelMinX, modelMaxX,
             //modelMinY, modelMaxY, modelMinZ, modelMaxZ);
             pressureMonitorID = structuralMonitorID;
@@ -214,14 +209,17 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             displacements.Add(structuralResultsY);
             displacements.Add(structuralResultsZ);
 
-            double[] modelMaxVelDivOverTime = new double[(int)(totalTime / timeStep)];
-            double[] modelMax_dP_dxOverTime = new double[(int)(totalTime / timeStep)];
-            double[] modelMax_dP_dyOverTime = new double[(int)(totalTime / timeStep)];
-            double[] modelMax_dP_dzOverTime = new double[(int)(totalTime / timeStep)];
+            double[] gp_dut_dx_OverTime = new double[(int)(totalTime / timeStep)];
+            double[] gp_dvt_dy_OverTime = new double[(int)(totalTime / timeStep)];
+            double[] gp_dwt_dz_OverTime = new double[(int)(totalTime / timeStep)];
+            double[] gp_div_v_OverTime = new double[(int)(totalTime / timeStep)];
+            double[] gp_dP_dx_OverTime = new double[(int)(totalTime / timeStep)];
+            double[] gp_dP_dy_OverTime = new double[(int)(totalTime / timeStep)];
+            double[] gp_dP_dz_Overtime = new double[(int)(totalTime / timeStep)];
             var dp_dxi = new List<double[]>();
-            dp_dxi.Add(modelMax_dP_dxOverTime);
-            dp_dxi.Add(modelMax_dP_dyOverTime);
-            dp_dxi.Add(modelMax_dP_dzOverTime);
+            dp_dxi.Add(gp_dP_dx_OverTime);
+            dp_dxi.Add(gp_dP_dy_OverTime);
+            dp_dxi.Add(gp_dP_dz_Overtime);
             #endregion
 
 
@@ -234,40 +232,27 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 staggeredAnalyzer.SolveCurrentStep();
 
                 #region logging
+                var monitoredGP_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoords, 1e-1);
 
-                var allValues = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues
-                    .Select(x => x.val).ToArray();
-
-                var divPMonitorId =
-                    Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], divPMonitorGP, 1e-1);
-
+                //nodal logs
+                var allValues = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray();
                 p_i[currentTimeStep] = allValues[0];
+                structuralResultsX[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray()[0];
+                structuralResultsY[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray()[1];
+                structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues.Select(x => x.val).ToArray()[2];
 
-                structuralResultsX[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0])
-                    .DOFValues.Select(x => x.val).ToArray()[0];
-                structuralResultsY[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0])
-                    .DOFValues.Select(x => x.val).ToArray()[1];
-                structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0])
-                    .DOFValues.Select(x => x.val).ToArray()[2];
+                //gp (element) logs
+                gp_dP_dx_OverTime[currentTimeStep] = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGP_elemID]).xcoeff_OverTimeAtGp1[0];
+                gp_dP_dy_OverTime[currentTimeStep] = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGP_elemID]).ycoeff_OverTimeAtGp1[0];
+                gp_dP_dz_Overtime[currentTimeStep] = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGP_elemID]).zcoeff_OverTimeAtGp1[0];
+                gp_dut_dx_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence_term1[0];
+                gp_dvt_dy_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence_term2[0];
+                gp_dwt_dz_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence_term3[0];
+                gp_div_v_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence[0];
 
-
-                modelMax_dP_dxOverTime[currentTimeStep] =
-                    ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[divPMonitorId])
-                    .xcoeff_OverTimeAtGp1[0];
-                modelMax_dP_dyOverTime[currentTimeStep] =
-                    ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[divPMonitorId])
-                    .ycoeff_OverTimeAtGp1[0];
-                modelMax_dP_dzOverTime[currentTimeStep] =
-                    ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[divPMonitorId])
-                    .zcoeff_OverTimeAtGp1[0];
-                
-
-
-                modelMaxVelDivOverTime[currentTimeStep] = velocityDivergenceAtElementGaussPoints
-                    .Select(x => Math.Abs(x.Value[0])).ToArray().Max();
-
-                modelMax_dP_dxOverTime[currentTimeStep] = pressureTensorDivergenceAtElementGaussPoints
-                    .Select(x => Math.Abs(x.Value[0][0])).ToArray().Max();
+                //model maximus (DO NOT ERASE)
+                //modelMaxVelDivOverTime[currentTimeStep] = velocityDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0])).ToArray().Max();
+                //modelMax_dP_dxOverTime[currentTimeStep] = pressureTensorDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0][0])).ToArray().Max();
 
 
                 if (Solution.ContainsKey(currentTimeStep))
@@ -300,13 +285,24 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             double Fval_e = 0;
             //eq9model.load_value;
 
-            //var outputPath = $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex5\";
-            var outputPath = "../../../StaggeredSolutionPresDynamex7/results1/";
-            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsX, outputPath + $@"pressure_{ pr}_F_{Fval}_e{Fval_e}_LOGGEDval_u_{1}_.txt");
-            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsY, outputPath + $@"pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_u_{2}_.txt");
-            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsZ, outputPath + $@"pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_u_{3}_.txt");
-            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(modelMaxVelDivOverTime, outputPath + $@"pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_modelMaxVelDivOverTime.txt");
-            (new MGroup.LinearAlgebra.Output.Array1DWriter()).WriteToFile(structuralResultsZ, outputPath + $@"pressure_{pr}_F_{Fval}_e{Fval_e}_LOGGEDval_modelMax_dP_dx{3}OverTime.txt");
+            //pressure_{ pr}_F_{Fval}_e{Fval_e}_LOGGEDval_ PAth name do not erase this exampleNo_{exNo}_caseNo_{caseNo}_
+            var writer = new MGroup.LinearAlgebra.Output.Array1DWriter();
+            var patSelection = 0;
+            var outputPath = patSelection == 0 ? "../../../StaggeredSolutionPresDynamex7/results1/" : $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex5\";
+            writer.WriteToFile(structuralResultsX, outputPath + $@"u_{1}_.txt");
+            writer.WriteToFile(structuralResultsY, outputPath + $@"u_{2}_.txt");
+            writer.WriteToFile(structuralResultsZ, outputPath + $@"u_{3}_.txt");
+            writer.WriteToFile(gp_dut_dx_OverTime, outputPath + $@"gp_dut_dx_OverTime.txt");
+            writer.WriteToFile(gp_dvt_dy_OverTime, outputPath + $@"gp_dvt_dy_OverTime.txt");
+            writer.WriteToFile(gp_dwt_dz_OverTime, outputPath + $@"gp_dwt_dz_OverTime.txt");
+            writer.WriteToFile(gp_div_v_OverTime, outputPath + $@"gp_div_v_OverTime_.txt");
+
+
+
+            writer.WriteToFile(p_i, outputPath + $@"p_i.txt");
+            writer.WriteToFile(gp_dP_dx_OverTime, outputPath + $@"gp_dP_dx_OverTime.txt");
+            writer.WriteToFile(gp_dP_dy_OverTime, outputPath + $@"gp_dP_dy_OverTime.txt");
+            writer.WriteToFile(gp_dP_dz_Overtime, outputPath + $@"gp_dP_dz_Overtime.txt");
 
 
             var path = outputPath+"dp_dxi_mslv.csv";
