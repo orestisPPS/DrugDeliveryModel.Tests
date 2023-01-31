@@ -225,20 +225,17 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
                 #region logging
 
-                var allValues = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues
-                    .Select(x => x.val).ToArray();
-
+                
                 var divPMonitorId =
                     Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], divPMonitorGP, 1e-1);
 
-                p_i[currentTimeStep] = allValues[0];
+                //nodal logs
+                p_i[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[0].GetNode(pressureMonitorID), ConvectionDiffusionDof.UnknownVariable];
+                double[] allValues = new double[] { p_i[currentTimeStep] };
+                structuralResultsX[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), StructuralDof.TranslationX];
+                structuralResultsY[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), StructuralDof.TranslationY];
+                structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), StructuralDof.TranslationZ];
 
-                structuralResultsX[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0])
-                    .DOFValues.Select(x => x.val).ToArray()[0];
-                structuralResultsY[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0])
-                    .DOFValues.Select(x => x.val).ToArray()[1];
-                structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0])
-                    .DOFValues.Select(x => x.val).ToArray()[2];
 
 
                 modelMax_dP_dxOverTime[currentTimeStep] =
