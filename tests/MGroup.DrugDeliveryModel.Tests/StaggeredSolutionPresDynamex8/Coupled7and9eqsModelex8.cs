@@ -176,8 +176,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             }
         }
 
-
-
-
+        public void SaveStateFromElements()
+        {
+            Eq9ModelProvider.SaveStateFromElements(model[1]);
+        }
     }
 }

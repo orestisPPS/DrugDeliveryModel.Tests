@@ -16,6 +16,8 @@ using MGroup.NumericalAnalyzers.Discretization.NonLinear;
 using MGroup.NumericalAnalyzers.Dynamic;
 using MGroup.NumericalAnalyzers.Logging;
 using MGroup.Solvers.Direct;
+using MGroup.MSolve.Numerics.Integration;
+using MGroup.LinearAlgebra.Matrices;
 
 namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 {
@@ -43,8 +45,10 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
         public int nodeIdToMonitor { get; private set; } //TODO put it where it belongs (coupled7and9eqsSolution.cs)
         private StructuralDof dofTypeToMonitor;
-        
-        
+
+
+        Dictionary<int, double[]> elementslastConvergedDisplacements;
+        private bool elementSavedDisplacementsIsInitialized = false;
 
         public int loadedNode_Id { get; private set; }
 
@@ -78,6 +82,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             this.loadedDof = loadedDof;
             this.load_value = load_value;
 
+            elementslastConvergedDisplacements = new Dictionary<int, double[]>(reader.ElementConnectivity.Count());
         }
 
         public Model GetModel()
@@ -104,6 +109,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 var domainId = elementConnectivity.Value.Item3;
                 var element = elementFactory.CreateNonLinearElementGrowt(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2, domainId == 0 ? materialTumor : materialNormal, DynamicMaterial, lambda[elementConnectivity.Key]);
                 element.volumeForce = pressureTensorDivergenceAtElementGaussPoints[elementConnectivity.Key][0];
+                if (elementSavedDisplacementsIsInitialized) { element.lastConvergedDisplacements = elementslastConvergedDisplacements[elementConnectivity.Key]; }
                 model.ElementsDictionary.Add(elementConnectivity.Key, element);
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
@@ -261,6 +267,16 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
             return (analyzer, solver, loadControlAnalyzer);
         }
-        
+
+        public void SaveStateFromElements(Model model)
+        {
+            foreach (var elem in reader.ElementConnectivity)
+            {
+                elementslastConvergedDisplacements[elem.Key] = ((ContinuumElement3DGrowth)model.ElementsDictionary[elem.Key]).localDisplacements.Copy();
+            }
+
+            elementSavedDisplacementsIsInitialized = true;
+        }
     }
 }
+

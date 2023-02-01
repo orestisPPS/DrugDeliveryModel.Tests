@@ -60,11 +60,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /*static double divPMonitorGPX = 0.01714618146;
         static double divPMonitorGPY = 0.05114110504;
         static double divPMonitorGPZ = 0.06533804930;*/
-        
-        static double divPMonitorGPX = 0.05;
-        static double divPMonitorGPY = 0.05;
-        static double divPMonitorGPZ = 0.05;
-        
+
+        static double divPMonitorGPX = 0.05301208792514899;
+        static double divPMonitorGPY = 0.053825572057669926;
+        static double divPMonitorGPZ = 0.052065045951539365;
+
+
         static double[] monitoredGPcoords = new double[] { divPMonitorGPX, divPMonitorGPY, divPMonitorGPZ };
 
         private static int divPMonitorID;
@@ -176,6 +177,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 velocityDivergenceAtElementGaussPoints.Add(elem.Key, velocityDiv);
             }
 
+
             miNormal = miTumor;
             kappaNormal = kappaTumor;
             structuralMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, structuralMonitorNodeCoords, 1e-2);
@@ -272,11 +274,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 (equationModel.ParentAnalyzers[0] as NewmarkDynamicAnalyzer).AdvanceStep();
                 (equationModel.ParentAnalyzers[1] as NewmarkDynamicAnalyzer).AdvanceStep();
 
+                #region get from solve models
                 for (int j = 0; j < equationModel.ParentAnalyzers.Length; j++)
                 {
                     equationModel.AnalyzerStates[j] = equationModel.ParentAnalyzers[j].CreateState();
                     equationModel.NLAnalyzerStates[j] = equationModel.NLAnalyzers[j].CreateState();
                 }
+
+                equationModel.SaveStateFromElements();
+                #endregion
+
 
                 Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
             }
