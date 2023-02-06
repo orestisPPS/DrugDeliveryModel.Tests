@@ -16,6 +16,8 @@ using MGroup.NumericalAnalyzers.Discretization.NonLinear;
 using MGroup.NumericalAnalyzers.Dynamic;
 using MGroup.NumericalAnalyzers.Logging;
 using MGroup.Solvers.Direct;
+using MGroup.MSolve.Numerics.Integration;
+using MGroup.LinearAlgebra.Matrices;
 
 namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 {
@@ -40,6 +42,9 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
        
         private Dictionary<int, double> lambda;
         Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints;
+
+        Dictionary<int, double[]> elementslastConvergedDisplacements;
+        private bool elementSavedDisplacementsIsInitialized = false;
 
         public int nodeIdToMonitor { get; private set; } //TODO put it where it belongs (coupled7and9eqsSolution.cs)
         private StructuralDof dofTypeToMonitor;
@@ -104,6 +109,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 var domainId = elementConnectivity.Value.Item3;
                 var element = elementFactory.CreateNonLinearElementGrowt(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2, domainId == 0 ? materialTumor : materialNormal, DynamicMaterial, lambda[elementConnectivity.Key]);
                 element.volumeForce = pressureTensorDivergenceAtElementGaussPoints[elementConnectivity.Key][0];
+                element.ID = elementConnectivity.Key;
+                if (elementSavedDisplacementsIsInitialized) { element.lastConvergedDisplacements = elementslastConvergedDisplacements[element.ID]; }
                 model.ElementsDictionary.Add(elementConnectivity.Key, element);
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
@@ -216,7 +223,47 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var emptyloads = new List<INodalLoadBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
         }
-        
+
+        public void AddEq9ModelLoadsCorner(Model model)
+        {
+            var loads = new List<INodalLoadBoundaryCondition>();
+
+            var cornerNodes = new List<INode>();
+            foreach (INode node in model.NodesDictionary.Values)
+            {
+                if (node.X == modelMinX && node.Y == modelMinY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMaxX && node.Y == modelMinY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMinX && node.Y == modelMaxY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMaxX && node.Y == modelMaxY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+            }
+
+            foreach (INode node in cornerNodes)
+            {
+                loads.Add(new NodalLoad
+                (
+                    node,
+                    loadedDof,
+                    amount: load_value
+                ));
+            }
+
+            var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
+        }
+
+
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog(Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
         {
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
@@ -261,6 +308,17 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
             return (analyzer, solver, loadControlAnalyzer);
         }
-        
+
+        public void SaveStateFromElements(Model model)
+        {
+            elementslastConvergedDisplacements = new Dictionary<int, double[]>();
+            foreach (var elem in reader.ElementConnectivity)
+            {
+                elementslastConvergedDisplacements[elem.Key] = ((ContinuumElement3DGrowth)model.ElementsDictionary[elem.Key]).localDisplacements.Copy();
+            }
+
+            elementSavedDisplacementsIsInitialized = true;
+        }
+
     }
 }

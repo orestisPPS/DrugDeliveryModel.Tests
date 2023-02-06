@@ -101,7 +101,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double structuralMonitorNodeZ = 0.05;//0.05; einai gia artio arithmo diakritopoishshs me hexa
 
         static double[] structuralMonitorNodeCoords = new double[]
-            { structuralMonitorNodeX, structuralMonitorNodeY, structuralMonitorNodeZ };
+            { 0.04930793848882013,0.04994681648346263,0.04953188199244812 };
 
         private static int structuralMonitorID;
         static ConvectionDiffusionDof eq7n8dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
@@ -220,6 +220,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             dp_dxi.Add(gp_dP_dx_OverTime);
             dp_dxi.Add(gp_dP_dy_OverTime);
             dp_dxi.Add(gp_dP_dz_Overtime);
+
+            int monitoredGP_elemID = -1;
             #endregion
 
 
@@ -232,7 +234,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 staggeredAnalyzer.SolveCurrentStep();
 
                 #region logging
-                var monitoredGP_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoords, 1e-1);
+                monitoredGP_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoords, 1e-1);
 
                 //nodal logs
                 p_i[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[0].GetNode(pressureMonitorID), ConvectionDiffusionDof.UnknownVariable];
@@ -277,7 +279,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                     equationModel.NLAnalyzerStates[j] = equationModel.NLAnalyzers[j].CreateState();
                 }
 
-                Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
+                equationModel.SaveStateFromElements();
+
+                //Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
             }
 
             double pr = 100;

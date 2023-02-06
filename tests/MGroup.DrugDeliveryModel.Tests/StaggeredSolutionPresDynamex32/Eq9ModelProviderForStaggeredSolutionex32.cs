@@ -108,12 +108,46 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 var domainId = elementConnectivity.Value.Item3;
                 var element = elementFactory.CreateNonLinearElementGrowt(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2, domainId == 0 ? materialTumor : materialNormal, DynamicMaterial, lambda[elementConnectivity.Key]);
                 element.volumeForce = pressureTensorDivergenceAtElementGaussPoints[elementConnectivity.Key][0];
+                element.ID = elementConnectivity.Key;
+                if (elementSavedDisplacementsIsInitialized) { element.lastConvergedDisplacements = elementslastConvergedDisplacements[element.ID]; }
                 model.ElementsDictionary.Add(elementConnectivity.Key, element);
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
             return model;
         }
-        
+
+        public void AddEq9ModelAppropriateBCs(Model model)
+        {
+            var faceXYNodes = new List<INode>();
+            var faceXZNodes = new List<INode>();
+            var faceYZNodes = new List<INode>();
+
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(0 - node.Z) < 1E-9) faceXYNodes.Add(node);
+                if (Math.Abs(0 - node.Y) < 1E-9) faceXZNodes.Add(node);
+                if (Math.Abs(0 - node.X) < 1E-9) faceYZNodes.Add(node);
+            }
+
+            var constraints = new List<INodalDisplacementBoundaryCondition>();
+            foreach (var node in faceXYNodes)
+            {
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
+            }
+            foreach (var node in faceXZNodes)
+            {
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
+            }
+            foreach (var node in faceYZNodes)
+            {
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
+            }
+
+            var emptyLoads1 = new List<INodalLoadBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyLoads1));
+
+        }
+
         public void AddEq9ModelLoads(Model model)
         {
             INode maxDistanceNode = null;
@@ -129,8 +163,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
 
 
-            /*loadedNode_Id = maxDistanceNode.ID;
-            nodeIdToMonitor = loadedNode_Id;*/
+            loadedNode_Id = maxDistanceNode.ID;
+            nodeIdToMonitor = loadedNode_Id;
             var loads = new List<INodalLoadBoundaryCondition>();
 
             loads.Add(new NodalLoad
@@ -257,7 +291,39 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var emptyloads = new List<INodalLoadBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
         }
-        
+
+        public void AddBottomBCs(Model model)
+        {
+
+            var topNodes = new List<INode>();
+            var bottomNodes = new List<INode>();
+            var innerBulkNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxZ - node.Z) < 1E-9) topNodes.Add(node);
+                else if (Math.Abs(modelMinZ - node.Z) < 1E-9) bottomNodes.Add(node);
+                else innerBulkNodes.Add(node);
+            }
+
+
+
+            var constraints = new List<INodalDisplacementBoundaryCondition>();
+            foreach (var node in topNodes)
+            {
+                //constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
+            }
+            foreach (var node in bottomNodes)
+            {
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
+                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
+            }
+
+            var emptyloads = new List<INodalLoadBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
+
+        }
+
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog(Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
         {
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
@@ -305,6 +371,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         
         public void SaveStateFromElements(Model model)
         {
+            elementslastConvergedDisplacements = new Dictionary<int, double[]>();
             foreach (var elem in reader.ElementConnectivity)
             {
                 elementslastConvergedDisplacements[elem.Key] = ((ContinuumElement3DGrowth)model.ElementsDictionary[elem.Key]).localDisplacements.Copy();

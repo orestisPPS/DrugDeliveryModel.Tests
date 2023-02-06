@@ -91,6 +91,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void CreateModel(IParentAnalyzer[] analyzers, ISolver[] solvers)
         {
+            //---------------------------------------
+            // WARNING: do not initialize shared dictionarys because they have been passed by refernce in ewuationModel bilders.
+            //---------------------------------------
+
+
+            // update Shared quantities of Coupled model
+            //foreach (var elem in reader.ElementConnectivity)
+            //{ 
+            //    lambda[elem.Key]= lambda0;
+            //}
             foreach (var elem in reader.ElementConnectivity)
             {
                 //ONE WAY COUPLING pressure is deleted
@@ -110,8 +120,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             //Create model for eq9 (hyper-elastic material)
             model[1] = Eq9ModelProvider.GetModel();
-            Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
-            Eq9ModelProvider.AddEq9ModelLoadsCorner(model[1]);
+            Eq9ModelProvider.AddBottomBCs(model[1]);
+            //Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
+            Eq9ModelProvider.AddEq9ModelLoads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             for (int i = 0; i < analyzers.Length; i++)
@@ -145,11 +156,11 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
             model = new Model[2];
-            
+
             //Create Initial Model eq78 (fluid pressure)
             model[0] = Eq78ModelProvider.GetModel();
             Eq78ModelProvider.AddAllBoundaryNodesBC(model[0]);
-            if(CurrentTimeStep==0)
+            if (CurrentTimeStep==0)
             {
                 Eq78ModelProvider.AddEq78ModelInitialConditions(model[0]);
             }
@@ -157,8 +168,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             //Create model for eq9 (hyperelastic material)
             model[1] = Eq9ModelProvider.GetModel();
-            Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
-            Eq9ModelProvider.AddEq9ModelLoadsCorner(model[1]);
+            //Eq9ModelProvider.AddEq9ModelAppropriateBCs(model[1]);
+            Eq9ModelProvider.AddBottomBCs(model[1]);
+            Eq9ModelProvider.AddEq9ModelLoads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             for (int i = 0; i < analyzers.Length; i++)

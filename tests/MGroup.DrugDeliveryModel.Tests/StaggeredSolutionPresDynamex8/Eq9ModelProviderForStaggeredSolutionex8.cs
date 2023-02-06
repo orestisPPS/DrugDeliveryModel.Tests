@@ -45,8 +45,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
         public int nodeIdToMonitor { get; private set; } //TODO put it where it belongs (coupled7and9eqsSolution.cs)
         private StructuralDof dofTypeToMonitor;
-
-
+        
+        
         Dictionary<int, double[]> elementslastConvergedDisplacements;
         private bool elementSavedDisplacementsIsInitialized = false;
 
@@ -82,7 +82,6 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             this.loadedDof = loadedDof;
             this.load_value = load_value;
 
-            elementslastConvergedDisplacements = new Dictionary<int, double[]>(reader.ElementConnectivity.Count());
         }
 
         public Model GetModel()
@@ -109,7 +108,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 var domainId = elementConnectivity.Value.Item3;
                 var element = elementFactory.CreateNonLinearElementGrowt(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2, domainId == 0 ? materialTumor : materialNormal, DynamicMaterial, lambda[elementConnectivity.Key]);
                 element.volumeForce = pressureTensorDivergenceAtElementGaussPoints[elementConnectivity.Key][0];
-                if (elementSavedDisplacementsIsInitialized) { element.lastConvergedDisplacements = elementslastConvergedDisplacements[elementConnectivity.Key]; }
+                element.ID = elementConnectivity.Key;
+                if (elementSavedDisplacementsIsInitialized) { element.lastConvergedDisplacements = elementslastConvergedDisplacements[element.ID]; }
                 model.ElementsDictionary.Add(elementConnectivity.Key, element);
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
@@ -162,9 +162,46 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
             
         }
+        
+        public void AddEq9ModelLoadsCorner(Model model)
+        {
+            var loads = new List<INodalLoadBoundaryCondition>();
 
+            var cornerNodes = new List<INode>();
+            foreach (INode node in model.NodesDictionary.Values)
+            {
+                if (node.X == modelMinX && node.Y == modelMinY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMaxX && node.Y == modelMinY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMinX && node.Y == modelMaxY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMaxX && node.Y == modelMaxY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+            }
 
+            foreach (INode node in cornerNodes)
+            {
+                loads.Add(new NodalLoad
+                (
+                    node,
+                    loadedDof,
+                    amount: load_value
+                ));
+            }
 
+            var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
+        }
+        
         public void AddBottomLeftRightFrontBackBCs(Model model)
         {
             var bottomNodes = new List<INode>();
@@ -258,8 +295,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 new List<(INode node, IDofType dof)>()
                 {
                     (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
-                    (model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationY),
-                    (model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationZ),
+                    //(model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationY),
+                    //(model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationZ),
                 }
             };
 
@@ -270,6 +307,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
         public void SaveStateFromElements(Model model)
         {
+            elementslastConvergedDisplacements = new Dictionary<int, double[]>();
             foreach (var elem in reader.ElementConnectivity)
             {
                 elementslastConvergedDisplacements[elem.Key] = ((ContinuumElement3DGrowth)model.ElementsDictionary[elem.Key]).localDisplacements.Copy();
@@ -279,4 +317,3 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         }
     }
 }
-

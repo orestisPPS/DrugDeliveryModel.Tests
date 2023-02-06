@@ -65,7 +65,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             this.div_vs = div_vs;
 
             this.modelReader = modelReader;
-            IsoparametricJacobian3D.DeterminantTolerance = 1e-30;
+            IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
 
             this.boundaryValue = boundaryValueAllBoundaries;
             this.initialCondition = initialCondition;
@@ -183,6 +183,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
         }
 
+        
+
+        //public void AddEq78ModelAppropriateBCs(Model model)
+        //{
+        //    var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(modelReader);
+        //    modelProvider.AddTopAndBottomBCs(model, modelMaxZ, topValueprescribed, modelMinZ, bottomValueprescribed);
+        //}
 
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog
         (Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
