@@ -476,3 +476,13 @@ connectionStrings.json
 **/wwwroot/assets/*
 /tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex8/results1
 /tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7/results1
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex81/results1
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/results1
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex81/dut_dxi_GP_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex81/dp_dxi_GP_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex81/displacements_nodes_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex81/pi_nodes_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/pi_nodes_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/dut_dxi_GP_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/dp_dxi_GP_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/displacements_nodes_mslv.csv
