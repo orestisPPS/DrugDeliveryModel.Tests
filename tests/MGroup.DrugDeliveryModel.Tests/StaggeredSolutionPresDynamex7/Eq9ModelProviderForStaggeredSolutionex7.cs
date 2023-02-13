@@ -43,13 +43,12 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         private Dictionary<int, double> lambda;
         Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints;
 
-        Dictionary<int, double[]> elementslastConvergedDisplacements;
-        private bool elementSavedDisplacementsIsInitialized = false;
-
         public int nodeIdToMonitor { get; private set; } //TODO put it where it belongs (coupled7and9eqsSolution.cs)
         private StructuralDof dofTypeToMonitor;
         
         
+        Dictionary<int, double[]> elementslastConvergedDisplacements;
+        private bool elementSavedDisplacementsIsInitialized = false;
 
         public int loadedNode_Id { get; private set; }
 
@@ -161,11 +160,48 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
 
-
+            
         }
+        
+        public void AddEq9ModelLoadsCorner(Model model)
+        {
+            var loads = new List<INodalLoadBoundaryCondition>();
 
+            var cornerNodes = new List<INode>();
+            foreach (INode node in model.NodesDictionary.Values)
+            {
+                if (node.X == modelMinX && node.Y == modelMinY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMaxX && node.Y == modelMinY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMinX && node.Y == modelMaxY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+                if (node.X == modelMaxX && node.Y == modelMaxY && node.Z == modelMaxZ)
+                {
+                    cornerNodes.Add(node);
+                }
+            }
 
+            foreach (INode node in cornerNodes)
+            {
+                loads.Add(new NodalLoad
+                (
+                    node,
+                    loadedDof,
+                    amount: load_value
+                ));
+            }
 
+            var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
+        }
+        
         public void AddBottomLeftRightFrontBackBCs(Model model)
         {
             var bottomNodes = new List<INode>();
@@ -223,47 +259,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var emptyloads = new List<INodalLoadBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
         }
-
-        public void AddEq9ModelLoadsCorner(Model model)
-        {
-            var loads = new List<INodalLoadBoundaryCondition>();
-
-            var cornerNodes = new List<INode>();
-            foreach (INode node in model.NodesDictionary.Values)
-            {
-                if (node.X == modelMinX && node.Y == modelMinY && node.Z == modelMaxZ)
-                {
-                    cornerNodes.Add(node);
-                }
-                if (node.X == modelMaxX && node.Y == modelMinY && node.Z == modelMaxZ)
-                {
-                    cornerNodes.Add(node);
-                }
-                if (node.X == modelMinX && node.Y == modelMaxY && node.Z == modelMaxZ)
-                {
-                    cornerNodes.Add(node);
-                }
-                if (node.X == modelMaxX && node.Y == modelMaxY && node.Z == modelMaxZ)
-                {
-                    cornerNodes.Add(node);
-                }
-            }
-
-            foreach (INode node in cornerNodes)
-            {
-                loads.Add(new NodalLoad
-                (
-                    node,
-                    loadedDof,
-                    amount: load_value
-                ));
-            }
-
-            var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
-            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
-        }
-
-
+        
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog(Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
         {
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
@@ -290,6 +286,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             //var analyzer = (new PseudoTransientAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentStep: currentStep)).Build();
             var analyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime,false, currentStep: currentStep);
             analyzerBuilder.SetNewmarkParametersForConstantAcceleration();
+            //var analyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentTimeStep: currentStep, bdfOrder: 5);
             var analyzer = analyzerBuilder.Build();
 
 
@@ -299,8 +296,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 new List<(INode node, IDofType dof)>()
                 {
                     (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
-                    (model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationY),
-                    (model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationZ),
+                    //(model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationY),
+                    //(model.NodesDictionary[nodeIdToMonitor], StructuralDof.TranslationZ),
                 }
             };
 
@@ -319,6 +316,5 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
             elementSavedDisplacementsIsInitialized = true;
         }
-
     }
 }

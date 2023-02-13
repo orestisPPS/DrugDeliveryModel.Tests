@@ -23,7 +23,7 @@ using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
-    public class Eq78ModelProviderForStaggeredSolutionex83
+    public class Eq78ModelProviderForStaggeredSolutionex7ref
     {
 
         private double modelMinX;
@@ -50,7 +50,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
 
-        public Eq78ModelProviderForStaggeredSolutionex83(ComsolMeshReader modelReader,
+        public Eq78ModelProviderForStaggeredSolutionex7ref(ComsolMeshReader modelReader,
             double kth, double Lp, double Sv, double pv, double LplSvl, double pl, Dictionary<int, double[]> div_vs,
             double boundaryValueAllBoundaries, double initialCondition,
             int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
@@ -65,7 +65,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             this.div_vs = div_vs;
 
             this.modelReader = modelReader;
-            IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
+            IsoparametricJacobian3D.DeterminantTolerance = 1e-30;
 
             this.boundaryValue = boundaryValueAllBoundaries;
             this.initialCondition = initialCondition;

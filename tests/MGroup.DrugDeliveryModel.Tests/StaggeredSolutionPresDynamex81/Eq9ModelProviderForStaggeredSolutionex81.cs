@@ -94,9 +94,15 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             {
                 model.NodesDictionary.Add(node.ID, node);
             }
-            
-            var materialNormal = new NeoHookeanMaterial3dJ3Isochoric(miNormal, kappaNormal);
-            var materialTumor = new NeoHookeanMaterial3dJ3Isochoric(miTumor, kappaTumor);
+
+            //var materialNormal = new NeoHookeanMaterial3dJ3Isochoric(miNormal, kappaNormal);
+            //var materialTumor = new NeoHookeanMaterial3dJ3Isochoric(miTumor, kappaTumor);
+            (double E_normal, double ni_normal) = GetElasticModelParameters(miNormal, kappaNormal);
+            var materialNormal = new ElasticMaterial3DDefGrad(E_normal, ni_normal);
+            (double E_Tumor, double ni_Tumor) = GetElasticModelParameters(miTumor, kappaTumor);
+            var materialTumor = new ElasticMaterial3DDefGrad(E_Tumor, ni_Tumor);
+            //var materialNormal = new NeoHookeanMaterial3dJ3Isochoric(miNormal, kappaNormal);
+            //var materialTumor = new NeoHookeanMaterial3dJ3Isochoric(miTumor, kappaTumor);
 
             var elasticMaterial = new ElasticMaterial3D(youngModulus: 1, poissonRatio: 0.3);
             var DynamicMaterial = new TransientAnalysisProperties(density: 1, rayleighCoeffMass: 0, rayleighCoeffStiffness: 0);
@@ -315,6 +321,19 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
 
             elementSavedDisplacementsIsInitialized = true;
+        }
+
+        /// <summary>
+        /// https://en.wikiversity.org/wiki/Elasticity/Constitutive_relations
+        /// </summary>
+        /// <param name="mi"></param>
+        /// <param name="kappa"></param>
+        /// <returns></returns>
+        static (double, double) GetElasticModelParameters(double mi, double kappa)
+        {
+            double poisson = (3 * kappa - 2 * mi) / (2 * (3 * kappa + mi));
+            double E = 9 * kappa * mi / (3 * kappa + mi);
+            return (E, poisson);
         }
     }
 }

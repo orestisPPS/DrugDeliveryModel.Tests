@@ -21,7 +21,7 @@ using MGroup.LinearAlgebra.Matrices;
 
 namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 {
-	public class Eq9ModelProviderForStaggeredSolutionex83
+	public class Eq9ModelProviderForStaggeredSolutionex7ref
     {
         //private double sc = 0.1;
         private double miNormal;// = 5;//KPa
@@ -52,7 +52,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
         public int loadedNode_Id { get; private set; }
 
-        public Eq9ModelProviderForStaggeredSolutionex83(ComsolMeshReader comsolReader, double sc, double miNormal, double kappaNormal, double miTumor,
+        public Eq9ModelProviderForStaggeredSolutionex7ref(ComsolMeshReader comsolReader, double sc, double miNormal, double kappaNormal, double miTumor,
             double kappaTumor, double timeStep, double totalTime,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             int nodeIdToMonitor, StructuralDof dofTypeToMonitor, StructuralDof loadedDof,
@@ -115,39 +115,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
             return model;
         }
-
-        public void AddEq9ModelAppropriateBCs(Model model)
-        {
-            var faceXYNodes = new List<INode>();
-            var faceXZNodes = new List<INode>();
-            var faceYZNodes = new List<INode>();
-
-            foreach (var node in model.NodesDictionary.Values)
-            {
-                if (Math.Abs(0 - node.Z) < 1E-9) faceXYNodes.Add(node);
-                if (Math.Abs(0 - node.Y) < 1E-9) faceXZNodes.Add(node);
-                if (Math.Abs(0 - node.X) < 1E-9) faceYZNodes.Add(node);
-            }
-
-            var constraints = new List<INodalDisplacementBoundaryCondition>();
-            foreach (var node in faceXYNodes)
-            {
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
-            }
-            foreach (var node in faceXZNodes)
-            {
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
-            }
-            foreach (var node in faceYZNodes)
-            {
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
-            }
-
-            var emptyLoads1 = new List<INodalLoadBoundaryCondition>();
-            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyLoads1));
-
-        }
-
+        
         public void AddEq9ModelLoads(Model model)
         {
             INode maxDistanceNode = null;
@@ -163,8 +131,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
 
 
-            loadedNode_Id = maxDistanceNode.ID;
-            nodeIdToMonitor = loadedNode_Id;
+            /*loadedNode_Id = maxDistanceNode.ID;
+            nodeIdToMonitor = loadedNode_Id;*/
             var loads = new List<INodalLoadBoundaryCondition>();
 
             loads.Add(new NodalLoad
@@ -233,7 +201,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
         }
-
+        
         public void AddBottomLeftRightFrontBackBCs(Model model)
         {
             var bottomNodes = new List<INode>();
@@ -248,17 +216,17 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             foreach (var node in model.NodesDictionary.Values)
             {
                 if (Math.Abs(modelMinZ - node.Z) < tol) bottomNodes.Add(node);
-                if (Math.Abs(modelMinX - node.X) < tol) leftNodes.Add(node);
-                if (Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
-                if (Math.Abs(modelMinY - node.Y) < tol) frontNodes.Add(node);
-                if (Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
+                if(Math.Abs(modelMinX - node.X) < tol) leftNodes.Add(node);
+                if(Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
+                if(Math.Abs(modelMinY - node.Y) < tol) frontNodes.Add(node);
+                if(Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
             }
 
             foreach (var node in model.NodesDictionary.Values)
             {
                 if (Math.Abs(modelMinZ - node.Z) < tol) { }
 
-                else if (Math.Abs(modelMinX - node.X) < tol) { }
+                else if (Math.Abs(modelMinX - node.X) < tol) { } 
                 else if (Math.Abs(modelMaxX - node.X) < tol) { }
 
                 else if (Math.Abs(modelMinY - node.Y) < tol) { }
@@ -267,7 +235,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
 
             var constraints = new List<INodalDisplacementBoundaryCondition>();
-
+            
             //Apply roller constraint to bottom nodes. (constrained movement in z direction)
             foreach (var node in bottomNodes)
                 constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
@@ -275,55 +243,23 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             //Apply roller constraint to left nodes. (constrained movement in x direction)
             foreach (var node in leftNodes)
                 constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
-
+            
             //Apply roller constraint to right nodes. (constrained movement in x direction)
             foreach (var node in rightNodes)
                 constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
-
+            
             //Apply roller constraint to front nodes. (constrained movement in y direction)
             foreach (var node in frontNodes)
                 constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
-
+            
             //Apply roller constraint to back nodes. (constrained movement in y direction)
             foreach (var node in backNodes)
                 constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
-
+            
             var emptyloads = new List<INodalLoadBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
         }
-
-        public void AddBottomBCs(Model model)
-        {
-
-            var topNodes = new List<INode>();
-            var bottomNodes = new List<INode>();
-            var innerBulkNodes = new List<INode>();
-            foreach (var node in model.NodesDictionary.Values)
-            {
-                if (Math.Abs(modelMaxZ - node.Z) < 1E-9) topNodes.Add(node);
-                else if (Math.Abs(modelMinZ - node.Z) < 1E-9) bottomNodes.Add(node);
-                else innerBulkNodes.Add(node);
-            }
-
-
-
-            var constraints = new List<INodalDisplacementBoundaryCondition>();
-            foreach (var node in topNodes)
-            {
-                //constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
-            }
-            foreach (var node in bottomNodes)
-            {
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationX, amount: 0d));
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationY, amount: 0d));
-                constraints.Add(new NodalDisplacement(node, StructuralDof.TranslationZ, amount: 0d));
-            }
-
-            var emptyloads = new List<INodalLoadBoundaryCondition>();
-            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
-
-        }
-
+        
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog(Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
         {
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };

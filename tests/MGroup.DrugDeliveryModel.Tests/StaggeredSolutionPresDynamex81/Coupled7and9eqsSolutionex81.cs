@@ -120,8 +120,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         //static double[] structuralMonitorNodeCoords = new double[]
         //    { 0.04930793848882013,0.04994681648346263,0.04953188199244812 };
-        static double[] structuralMonitorNodeCoords = new double[]
-            { 0.04930793848882013,0.04994681648346263,0.075 };
+        //static double[] structuralMonitorNodeCoords = new double[]
+        //    { 0.04930793848882013,0.04994681648346263,0.075 };
+        static double[] structuralMonitorNodeCoords = new double[] // WARNING IT is overwitenn for the pressure log
+            { 0.0,0.0,0.1 };
 
         private static int structuralMonitorID;
         static ConvectionDiffusionDof eq7n8dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
@@ -199,7 +201,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             kappaNormal = kappaTumor;
             structuralMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, structuralMonitorNodeCoords, 1e-2);
             //pressureMonitorID = Utilities.FindRandomInternalNode(comsolReader.NodesDictionary, modelMinX, modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ);
-            pressureMonitorID = structuralMonitorID;
+            //pressureMonitorID = structuralMonitorID;
+            pressureMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, new double[] {0.05,0.05,0.075}, 1e-2);
             var eq78Model = new Eq78ModelProviderForStaggeredSolutionex81(comsolReader, k_th, Lp, Sv, pv, LplSvl, pl,
                 velocityDivergenceAtElementGaussPoints,
 

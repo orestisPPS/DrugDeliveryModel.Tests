@@ -20,15 +20,16 @@ using MGroup.FEM.ConvectionDiffusion.Isoparametric;
 using MGroup.FEM.Structural.Continuum;
 using TriangleNet.Meshing.Algorithm;
 using System.Xml.Linq;
+using MGroup.FEM.ConvectionDiffusion.Tests.Commons;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
-    public class Coupled7and9eqsSolutionex8
+    public class Coupled7and9eqsSolutionex7ref
     {
         const double Sc = 0.1;
 
         private const double timeStep = 0.00001; // in sec
-        const double totalTime = 0.00100; // in sec
+        const double totalTime = 0.0001; // in sec
         static int incrementsPertimeStep = 1;
 
 
@@ -101,7 +102,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double LplSvl = 0; // 1/(KPa sec)
         static double pv = 0; // kPa
         static double pl = 0d; // KPa
-        static double k_th = 7.52e-2; // m2/(KPa sec)
+        static double k_th = 7.52e-6; // m2/(KPa sec)
 
 
 
@@ -141,7 +142,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double modelMinZ = 0;
         static double modelMaxZ = 0.1;
 
-        public Coupled7and9eqsSolutionex8()
+        public Coupled7and9eqsSolutionex7ref()
         {
             IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
         }
@@ -241,19 +242,19 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
 
-            var eq78Model = new Eq78ModelProviderForStaggeredSolutionex8(comsolReader, k_th, Lp, Sv, pv, LplSvl, pl,
+            var eq78Model = new Eq78ModelProviderForStaggeredSolutionex7ref(comsolReader, k_th, Lp, Sv, pv, LplSvl, pl,
                 velocityDivergenceAtElementGaussPoints,
 
                 boundaryValueAllBoundaries, initialCondition, pressureMonitorID, eq7n8dofTypeToMonitor, modelMinX,
                 modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ);
             //COMMITED BY NACHO 
             //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
-            var eq9Model = new Eq9ModelProviderForStaggeredSolutionex8(comsolReader, Sc, miNormal, kappaNormal, miTumor,
+            var eq9Model = new Eq9ModelProviderForStaggeredSolutionex7ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
                 kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
                 structuralMonitorID, eq9dofTypeToMonitor, loadedDof, load_value, modelMinX, modelMaxX, modelMinY,
                 modelMaxY, modelMinZ, modelMaxZ);
 
-            var equationModel = new Coupled7and9eqsModelex8(eq78Model, eq9Model, comsolReader, lambda,
+            var equationModel = new Coupled7and9eqsModelex7ref(eq78Model, eq9Model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,
                 totalTime, incrementsPertimeStep);
 
@@ -324,6 +325,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 //Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
             }
 
+            Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1E-6));
+            //Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedPressurevalues(), 1E-6));
+
             double pr = 100;
             double Fval = 100;
             double Fval_e = 0;
@@ -332,7 +336,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //pressure_{ pr}_F_{Fval}_e{Fval_e}_LOGGEDval_ PAth name do not erase this exampleNo_{exNo}_caseNo_{caseNo}_
             var writer = new MGroup.LinearAlgebra.Output.Array1DWriter();
             var patSelection = 0;
-            var outputPath = patSelection == 0 ? "../../../StaggeredSolutionPresDynamex8/results1/" : $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex5\";
+            var outputPath = patSelection == 0 ? "../../../StaggeredSolutionPresDynamex7ref/results1/" : $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex5\";
             writer.WriteToFile(structuralResultsX, outputPath + $@"u_{1}_.txt");
             writer.WriteToFile(structuralResultsY, outputPath + $@"u_{2}_.txt");
             writer.WriteToFile(structuralResultsZ, outputPath + $@"u_{3}_.txt");
@@ -350,17 +354,39 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
             //var path = outputPath+"dp_dxi_mslv.csv";
-            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(dp_dxi), "../../../StaggeredSolutionPresDynamex8/dp_dxi_GP_mslv.csv");
-            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(displacements), "../../../StaggeredSolutionPresDynamex8/displacements_nodes_mslv.csv");
-            CSVExporter.ExportVectorToCSV(p_i, "../../../StaggeredSolutionPresDynamex8/pi_nodes_mslv.csv");
-            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(divVelocity), "../../../StaggeredSolutionPresDynamex8/dut_dxi_GP_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(dp_dxi), "../../../StaggeredSolutionPresDynamex7ref/dp_dxi_GP_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(displacements), "../../../StaggeredSolutionPresDynamex7ref/displacements_nodes_mslv.csv");
+            CSVExporter.ExportVectorToCSV(p_i, "../../../StaggeredSolutionPresDynamex7ref/pi_nodes_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(divVelocity), "../../../StaggeredSolutionPresDynamex7ref/dut_dxi_GP_mslv.csv");
 
+        }
+
+
+        public static double[] expectedDisplacments()
+        {
+            return new double[] {
+             3.6617740000e-09,
+             1.8250890000e-08,
+             4.7236380000e-08,
+             9.0350780000e-08,
+             1.4735030000e-07,
+             2.1802150000e-07,
+             3.0216870000e-07,
+             3.9960820000e-07,
+             5.1015800000e-07,
+             6.3363370000e-07,};
+        }
+
+
+        public static double[] expectedPressurevalues()
+        {
+            return new double[] { };
         }
 
 
 
 
 
-        
+
     }
 }
