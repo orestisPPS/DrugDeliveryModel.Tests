@@ -486,3 +486,26 @@ connectionStrings.json
 /tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/dut_dxi_GP_mslv.csv
 /tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/dp_dxi_GP_mslv.csv
 /tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex82/displacements_nodes_mslv.csv
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/u_3_k_th_7.52e-6m2(KPa sec)-1.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/u_3_k_th_7.52e-5m2(KPa sec)-1.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/u_2_.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/u_1_.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/p_i.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/gp_dwt_dz_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/gp_dvt_dy_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/gp_dut_dx_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/gp_dP_dz_Overtime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/gp_dP_dy_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/gp_dP_dx_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex7ref/results1/gp_div_v_OverTime_.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/u_3_.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/u_2_.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/u_1_.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/p_i.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/gp_dwt_dz_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/gp_dvt_dy_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/gp_dut_dx_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/gp_dP_dz_Overtime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/gp_dP_dy_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/gp_dP_dx_OverTime.txt
+/tests/MGroup.DrugDeliveryModel.Tests/StaggeredSolutionPresDynamex83/results1/gp_div_v_OverTime_.txt
