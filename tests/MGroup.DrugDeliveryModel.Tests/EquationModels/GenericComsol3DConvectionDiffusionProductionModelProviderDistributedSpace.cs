@@ -17,6 +17,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
     {
         public Dictionary<int, double[]> ConvectionCoeffs;  //=> new[]  {1d, 1d, 1d};
         public double DiffusionCoeff;
+        public Dictionary<int, double> DiffussionCoeffs;
         public Dictionary<int, double> DependentProductionCoeffs;
         public Dictionary<int, double> IndependentProductionCoeffs;
         private double CapacityCoeff;
@@ -77,6 +78,57 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
 
             
+            return model;
+        }
+
+        public Model CreateModelFromComsolFile(Dictionary<int, double[]> convectionCoeffs,
+            Dictionary<int, double> difussionCoeffs, Dictionary<int, double> dependentProductionCoeffs,
+            Dictionary<int, double> independentProductionCoeffs, double capacityCoeff,
+            Func<double, double> productionFunc = null, Func<double, double> productionDeriv = null)
+        {
+            ConvectionCoeffs = convectionCoeffs;
+            DiffussionCoeffs = difussionCoeffs;
+            DependentProductionCoeffs = dependentProductionCoeffs;
+            IndependentProductionCoeffs = independentProductionCoeffs;
+            CapacityCoeff = capacityCoeff;
+
+
+            var model = new Model();
+            model.SubdomainsDictionary[0] = new Subdomain(id: 0);
+
+
+            foreach (var node in reader.NodesDictionary.Values)
+            {
+                model.NodesDictionary.Add(node.ID, node);
+            }
+
+
+
+            foreach (var elementConnectivity in reader.ElementConnectivity)
+            {
+
+                var material = new ConvectionDiffusionProperties(
+                capacityCoeff: CapacityCoeff,
+                diffusionCoeff: DiffussionCoeffs[elementConnectivity.Key],
+                convectionCoeff: ConvectionCoeffs[elementConnectivity.Key],
+                dependentSourceCoeff: productionDeriv != null ? 0 : DependentProductionCoeffs[elementConnectivity.Key],
+                independentSourceCoeff: IndependentProductionCoeffs[elementConnectivity.Key]);
+
+                var elementFactory = new ConvectionDiffusionElement3DFactory(material);
+                var element = elementFactory.CreateElement(elementConnectivity.Value.Item1, elementConnectivity.Value.Item2);
+                if (productionDeriv != null)
+                {
+                    element.LinearProduction = false;
+                    element.ProductionFunction = productionFunc;
+                    element.ProductionFunctionDerivative = productionDeriv;
+
+                }
+                element.ID = elementConnectivity.Key; ;
+                model.ElementsDictionary.Add(elementConnectivity.Key, element);
+                model.SubdomainsDictionary[0].Elements.Add(element);
+            }
+
+
             return model;
         }
 

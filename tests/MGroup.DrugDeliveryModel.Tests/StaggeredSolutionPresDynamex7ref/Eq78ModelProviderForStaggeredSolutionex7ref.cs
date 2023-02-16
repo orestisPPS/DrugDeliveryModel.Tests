@@ -35,11 +35,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private double modelMaxZ;
 
         private double Sv;
-        private double k_th;
+        private double k_th_tumor;
+        private double k_th_host;
         private double pv;
         private double pl;
         private double Lp;
-        private double LplSvl;
+        private double LplSvl_tumor;
+        private double LplSvl_host;
 
         private double boundaryValue;
         private double initialCondition;
@@ -53,17 +55,19 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
         public Eq78ModelProviderForStaggeredSolutionex7ref(ComsolMeshReader modelReader,
-            double kth, double Lp, double Sv, double pv, double LplSvl, double pl, Dictionary<int, double[]> div_vs,
-            double boundaryValueAllBoundaries, double initialCondition,
-            int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
-            double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ, List<(int, int, double[][], double[])> eq78BCsList)
+            double k_th_tumor, double k_th_host, double Lp, double Sv, double pv, double LplSvl_tumor, double LplSvl_host,
+            double pl, Dictionary<int, double[]> div_vs, double boundaryValueAllBoundaries, double initialCondition,
+            int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor, double modelMinX, double modelMaxX,
+            double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ, List<(int, int, double[][], double[])> eq78BCsList)
         {
             this.Sv = Sv;
-            this.k_th = kth;
+            this.k_th_tumor = k_th_tumor;
+            this.k_th_host = k_th_host;
             this.pv = pv;
             this.pl = pl;
             this.Lp = Lp;
-            this.LplSvl = LplSvl;
+            this.LplSvl_host = LplSvl_host;
+            this.LplSvl_tumor = LplSvl_tumor;
             this.div_vs = div_vs;
 
             this.modelReader = modelReader;
@@ -90,19 +94,28 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         {
             double capacity = 0;
             double convectionCoeff = 0;
-            double diffusion = k_th;
-            double dependentProductionCoeff = -(Lp * Sv + LplSvl);
+            //double diffusion = k_th;
+            
 
+            Dictionary<int, double> diffusionCoeffs = new Dictionary<int, double>();
             Dictionary<int, double[]>ConvectionCoeffs = new Dictionary<int, double[]>(); //=> new[]  {1d, 1d, 1d};               
             Dictionary<int, double> DependentProductionCoeffs = new Dictionary<int, double>();
             Dictionary<int, double> IndependentProductionCoeffs = new Dictionary<int, double>();
             foreach (var elementConnectivity in modelReader.ElementConnectivity)
             {
+                var domainId = elementConnectivity.Value.Item3;
+
+                double LplSvl = domainId == 0 ? LplSvl_tumor : LplSvl_host;
+
+                double dependentProductionCoeff = -(Lp * Sv + LplSvl);
+
                 ConvectionCoeffs[elementConnectivity.Key] = new double[]
                     { convectionCoeff, convectionCoeff, convectionCoeff };
                 DependentProductionCoeffs[elementConnectivity.Key] = dependentProductionCoeff;
                 
                 var nodes = elementConnectivity.Value.Item2;
+
+                diffusionCoeffs[elementConnectivity.Key] = domainId == 0 ? k_th_tumor : k_th_host;
 
                 //var independentSource = Lp * Sv * pv  - div_vs[elementConnectivity.Key][0]; 
                 //var independentSource = Lp * Sv * pv; 
@@ -113,7 +126,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //initialize mpdel provider solution
             var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(modelReader);
 
-            var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusion,
+            var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusionCoeffs,
                 DependentProductionCoeffs, IndependentProductionCoeffs, capacity);
             return model;
         }

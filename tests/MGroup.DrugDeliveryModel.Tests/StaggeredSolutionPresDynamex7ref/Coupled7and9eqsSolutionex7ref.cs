@@ -97,19 +97,25 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         // original case
         //static double Sv = 7e+3; // 1/(m)
         //static double Lp = 2.7e-12; // m/(KPa sec)
-        //static double LplSvl = 0; // 1/(KPa sec)
+        //static double LplSvl_tumor = 0; // 1/(KPa sec)
+        //static double LplSvl_host = 3.75e-1; // 1/(KPa sec)
         //static double pv = 4; // kPa
         //static double pl = 0d; // KPa
         //static double k_th = 7.52e-10; // m2/(KPa sec)
+        //static double k_th_tumor = 7.52e-11; // m2/(KPa sec)
+        //static double k_th_host = 7.52e-13; // m2/(KPa sec)
 
         // simplified case
         static double Sv = 0; // 1/(m)
         static double Lp = 0; // m/(KPa sec)
-        static double LplSvl = 0; // 1/(KPa sec)
+        static double LplSvl_tumor = 0; // 1/(KPa sec)
+        static double LplSvl_host = 0; // 1/(KPa sec)
         static double pv = 0; // kPa
         static double pl = 0d; // KPa
-        static double k_th = 7.52e-6; // m2/(KPa sec)
+        static double k_th_tumor = 7.52e-6; // m2/(KPa sec)
+        static double k_th_host = 7.52e-6; // m2/(KPa sec)
 
+        
         #endregion
 
         #region Darcy BCs
@@ -263,7 +269,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
 
-            var eq78Model = new Eq78ModelProviderForStaggeredSolutionex7ref(comsolReader, k_th, Lp, Sv, pv, LplSvl, pl,
+            var eq78Model = new Eq78ModelProviderForStaggeredSolutionex7ref(comsolReader, k_th_tumor, k_th_host, Lp, Sv, pv,
+                LplSvl_tumor, LplSvl_host, pl,
                 velocityDivergenceAtElementGaussPoints,
                 boundaryValueAllBoundaries, initialCondition, pressureMonitorID, eq7n8dofTypeToMonitor, modelMinX,
                 modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ, eq78BCsList);
