@@ -197,7 +197,30 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(dirichletBCs, new INodalConvectionDiffusionNeumannBoundaryCondition[] {}));
         }
-        
+
+        public void AddZFaceBcs(Model model, double zCoordOfFace, double dirichleValue, ConvectionDiffusionDof dofTypeToPrescribeDircihle)
+        {
+
+            var zFaceNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(zCoordOfFace - node.Z) < 1E-9) zFaceNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in zFaceNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, dirichleValue));
+            }
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
         public void AddEq78ModelInitialConditions(Model model)
         {
             var topNodes = new List<INode>();

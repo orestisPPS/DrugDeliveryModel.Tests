@@ -18,6 +18,8 @@ using MGroup.NumericalAnalyzers.Logging;
 using MGroup.Solvers.Direct;
 using MGroup.MSolve.Numerics.Integration;
 using MGroup.LinearAlgebra.Matrices;
+using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
+using MGroup.Constitutive.ConvectionDiffusion;
 
 namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 {
@@ -304,6 +306,133 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
                 }
             }
+
+        }
+
+        public void AddXFaceBcs(Model model, double xCoordOfFace, double[] dirichletValuesToPrescribe, StructuralDof[] dofTypesToConstrained)
+        {
+
+            var xFaceNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(xCoordOfFace - node.X) < 1E-9) xFaceNodes.Add(node);
+            }
+
+            var constraints = new List<INodalDisplacementBoundaryCondition>();
+
+            foreach (var node in xFaceNodes)
+            {
+                for (int i = 0; i < dirichletValuesToPrescribe.Length; i++)
+                {
+                    var dofToSetPrescribed = dofTypesToConstrained[i];
+                    var valueToPrescribe = dirichletValuesToPrescribe[i];
+                    constraints.Add(new NodalDisplacement(node, dofToSetPrescribed, amount: valueToPrescribe));
+                }
+                
+            }
+
+            var emptyloads = new List<INodalLoadBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
+
+        }
+
+        public void AddYFaceBcs(Model model, double yCoordOfFace, double[] dirichletValuesToPrescribe, StructuralDof[] dofTypesToConstrained)
+        {
+
+            var yFaceNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(yCoordOfFace - node.Y) < 1E-9) yFaceNodes.Add(node);
+            }
+
+            var constraints = new List<INodalDisplacementBoundaryCondition>();
+
+            foreach (var node in yFaceNodes)
+            {
+                for (int i = 0; i < dirichletValuesToPrescribe.Length; i++)
+                {
+                    var dofToSetPrescribed = dofTypesToConstrained[i];
+                    var valueToPrescribe = dirichletValuesToPrescribe[i];
+                    constraints.Add(new NodalDisplacement(node, dofToSetPrescribed, amount: valueToPrescribe));
+                }
+
+            }
+
+            var emptyloads = new List<INodalLoadBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
+
+        }
+
+
+        public void AddZFaceBcs(Model model, double zCoordOfFace, double[] dirichletValuesToPrescribe, StructuralDof[] dofTypesToConstrained)
+        {
+
+            var zFaceNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(zCoordOfFace - node.Z) < 1E-9) zFaceNodes.Add(node);
+            }
+
+            var constraints = new List<INodalDisplacementBoundaryCondition>();
+
+            foreach (var node in zFaceNodes)
+            {
+                for (int i = 0; i < dirichletValuesToPrescribe.Length; i++)
+                {
+                    var dofToSetPrescribed = dofTypesToConstrained[i];
+                    var valueToPrescribe = dirichletValuesToPrescribe[i];
+                    constraints.Add(new NodalDisplacement(node, dofToSetPrescribed, amount: valueToPrescribe));
+                }
+
+            }
+
+            var emptyloads = new List<INodalLoadBoundaryCondition>();
+            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
+
+        }
+        public void AddXplusBCs(Model model, double modelMaxX, double ValueprescribedformaxXcoord)
+        {
+
+            var maxXCoordNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxX - node.X) < 1E-9) maxXCoordNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in maxXCoordNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, ValueprescribedformaxXcoord));
+            }
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
+        public void AddYplusBCs(Model model, double modelMaxX, double ValueprescribedformaxXcoord)
+        {
+
+            var maxXCoordNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxX - node.X) < 1E-9) maxXCoordNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in maxXCoordNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, ValueprescribedformaxXcoord));
+            }
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
 
         }
 
