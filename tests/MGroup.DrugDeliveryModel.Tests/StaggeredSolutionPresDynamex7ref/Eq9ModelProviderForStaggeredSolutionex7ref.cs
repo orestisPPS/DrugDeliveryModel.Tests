@@ -28,10 +28,14 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         private double kappaNormal;// = 6.667; //Kpa
         private double miTumor;// = 22.44; //Kpa
         private double kappaTumor;// = 216.7; //Kpa
-        private StructuralDof loadedDof;
-        public double load_value { get; private set; }
-    
-        private double modelMinX;
+
+
+        private List<(int, StructuralDof[], double[][], double[])> eq9LoadsList;
+        private StructuralDof loadedDof; //TODO Orestis :if AddLoads9BCs() is implemented in a right way thhese will not be necessary and be deleted.
+        public double load_value { get; private set; }//TODO Orestis :if AddLoads9BCs() is implemented in a right way thhese will not be necessary and be deleted.
+
+        private List<(int, StructuralDof[], double[][], double[])> eq9BCsList;
+        private double modelMinX; //TODO Orestis :if AddEquation9BCs() is implemented in a right way thhese will not be necessary and be deleted.
         private double modelMaxX;
         private double modelMinY;
         private double modelMaxY;
@@ -56,7 +60,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             double kappaTumor, double timeStep, double totalTime,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             int nodeIdToMonitor, StructuralDof dofTypeToMonitor, StructuralDof loadedDof,
-            double load_value, double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ)
+            double load_value, double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ,
+            List<(int, StructuralDof[], double[][], double[])> eq9BCsList, List<(int, StructuralDof[], double[][], double[])> eq9LoadsList)
         {
             //this.sc = sc;
             this.miNormal = miNormal;
@@ -81,6 +86,9 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             //Load
             this.loadedDof = loadedDof;
             this.load_value = load_value;
+
+            this.eq9BCsList = eq9BCsList;
+            this.eq9LoadsList = eq9LoadsList;
 
         }
 
@@ -115,7 +123,55 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             }
             return model;
         }
-        
+
+        public void AddEquation9Loads(Model model)
+        {
+            foreach (var Loaddata in eq9LoadsList)
+            {
+                var RegionType = Loaddata.Item1; //Todo use enum suchh Region.SingleEntityPlusXFace or Region.InnerEntityMinusXFace
+                var LoadedDofs = Loaddata.Item2;
+                double[][] CaracteristicCoords = Loaddata.Item3;
+                double[] loadsOfRespectiveDofs = Loaddata.Item4;
+
+                switch (RegionType)
+                {
+                    case 1:
+                        {
+                            //TODO Orestis: Prosarmose tin kaloumeni parakatw methodo
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords kai to Loaddata
+                            AddEq9ModelLoadsCorner(model);
+                            break;
+                        }
+
+                    case 2:
+                        {
+                            //TODO Orestis: (einai to validate velocity paradeigma)
+                            //
+                            //Omoiws
+                            //  prosarmose tin 
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords
+
+                            //AddEq9ModelLoads(model);
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            //TODO Orestis:  Se aftin peta not Implemented exception 
+                            // alla na uparxei sa methodos me swsta orismata
+
+                            //Add_Distributed_Load(model) me oloklirwma enos double[]
+                            //se mia epilegomeni epifaneia
+                            break;
+                        }
+
+                }
+            }
+
+        }
+
         public void AddEq9ModelLoads(Model model)
         {
             INode maxDistanceNode = null;
@@ -201,7 +257,56 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var emptyConstraints = new List<INodalDisplacementBoundaryCondition>();
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
         }
-        
+
+        public void AddEquation9BCs(Model model)
+        {
+            foreach (var BCdata in eq9BCsList)
+            {
+                var RegionType = BCdata.Item1;
+                var Bcstype = BCdata.Item2;
+                double[][] CaracteristicCoords = BCdata.Item3;
+                double[] prescrVal = BCdata.Item4;
+
+                switch (RegionType)
+                {
+                    case 1:
+                        {
+                            //TODO Orestis: Prosarmose tin kaloumeni parakatw methodo
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords kai to BCdata
+                            AddBottomLeftRightFrontBackBCs(model);
+                            break;
+                        }
+
+                    case 2:
+                        {
+                            //TODO Orestis: copy  AddBottomBCs() method from
+                            //Eq9ModelProviderForStaggeredSolutionex83.cs
+                            // kai prosarmose tin 
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords
+
+                            //AddAllBoundaryNodesBC(model);
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            //TODO Orestis: copy  AddBottomLeftFrontBackBCs() method from
+                            //Eq9ModelProviderForStaggeredSolutionex6_1.cs
+                            // kai prosarmose tin 
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords
+
+                            //AddAllBoundaryNodesBC(model);
+                            break;
+                        }
+
+                }
+            }
+
+        }
+
         public void AddBottomLeftRightFrontBackBCs(Model model)
         {
             var bottomNodes = new List<INode>();
@@ -260,6 +365,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
         }
         
+        //TODO Gerasimos add if for dynamic or peudostatic analyzer
+
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog(Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
         {
             var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };

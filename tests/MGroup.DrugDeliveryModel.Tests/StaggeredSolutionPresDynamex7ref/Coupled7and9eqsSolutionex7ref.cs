@@ -31,22 +31,15 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private const double timeStep = 0.00001; // in sec
         const double totalTime = 0.0001; // in sec
         static int incrementsPertimeStep = 1;
+        static int currentTimeStep = 0;
 
-
-        // strucutral model Loads
-        static StructuralDof loadedDof = StructuralDof.TranslationZ;
-        //static double load_value = 0.0001 / 4; //[kN]
-        static double load_value = 0.0001 / 4; //[kN]
-
-
-        //structural model properties
+        #region Structural model properties
         static double miNormal = 5; //KPa
         static double kappaNormal = 6.667; //Kpa
 
         static double miTumor = 22.44; //Kpa
         static double kappaTumor = 216.7; //Kpa
 
-        static int currentTimeStep = 0;
         static double lambda0 = 1;
         int nGaussPoints = 1;
         static double initial_dp_dx = 0.0;
@@ -56,38 +49,51 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static Dictionary<double, double[]> Solution = new Dictionary<double, double[]>();
         private static List<(INode node, IDofType dof)> watchDofs = new List<(INode node, IDofType dof)>();
 
+        // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
+        static List<(int, StructuralDof[], double[][], double[])> eq9BCsList = new List<(int, StructuralDof[], double[][], double[])>()
+        {(1, new StructuralDof[3], new double[3][], new double[3])};
 
-        private static int pressureMonitorID;
+        #endregion
 
-        /*static double divPMonitorGPX = 0.01714618146;
-        static double divPMonitorGPY = 0.05114110504;
-        static double divPMonitorGPZ = 0.06533804930;*/
+        #region Structural model BCs and Loads
+        // Data 1:RegionType, 2:LoadedDofs, 3: Region CaracteristicCoords Id, 4: values of loaded dofs values
+        static List<(int, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(int, StructuralDof[], double[][], double[])>()
+        {(1, new StructuralDof[3], new double[3][], new double[3])};
 
-        //static double divPMonitorGPX = 0.05;
-        //static double divPMonitorGPY = 0.05;
-        //static double divPMonitorGPZ = 0.05;
+        // strucutral model Loads TODO Orestis: delete these loada data and implement them in load list
+        static StructuralDof loadedDof = StructuralDof.TranslationZ;
+        //static double load_value = 0.0001 / 4; //[kN]
+        static double load_value = 0.0001 / 4; //[kN]
+        #endregion
 
-        //static double divPMonitorGPX = 0;
-        //static double divPMonitorGPY = 0;
-        //static double divPMonitorGPZ = 0.1;
+        #region ToDo Orestis log task 1 
+        /// <summary>
+        /// Data 1:coords, 2:outputfileString, 3: logged Doftype, 4: found node Id, 5: results 
+        /// </summary>
+        static List<(double[], string, StructuralDof, int, double[])> nodeDisplacementLogs = new List<(double[], string, StructuralDof, int, double[])>()
+        {(new double[]{ 0.04930793848882013,0.04994681648346263,0.075 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
 
-        static double divPMonitorGPX = 0.004086132769345323;
-        static double divPMonitorGPY = 0.006191771651571988;
-        static double divPMonitorGPZ = 0.09369050147682026;
-                                       
-        //GP with coordinates: 0.05301208792514899 0.053825572057669926 0.052065045951539365 is in element with id: 1251 NEAR [0.5, 0.5, 0.5]
-        //GP with coordinates: 0.004086132769345323 0.006191771651571988 0.09369050147682026 is in element with id: 740  NEAR [0,0,0.1]
-
-
-        //static double[] monitoredGPcoords = new double[] { 0.05301208792514899, 0.053825572057669926, 0.052065045951539365 };
-        static double[] monitoredGPcoords = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
-
-        private static int divPMonitorID;
-
+        static double[] structuralMonitorNodeCoords = new double[]
+            { 0.0, 0.0, 0.1 };
+        private static int structuralMonitorID;
         static StructuralDof eq9dofTypeToMonitor = StructuralDof.TranslationZ;
+        #endregion
+
+        #region ToDo Orestis log task 2
+        /// <summary>
+        /// Data 1:coords, 2:outputfileString, 3: found element Id, 4: results 
+        /// </summary>
+        static List<(double[], string, int, double[][])> gpVelocityGraadientLogs = new List<(double[], string, int, double[][])>()
+        {(new double[]{ 0.05301208792514899, 0.053825572057669926, 0.052065045951539365 }, "CenterNodeGradients",-1, new double[3][])};
+
+        static double[] monitoredGPcoordsVelocity = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+
+        #endregion
+
+        #region Darcy model
 
         //Darcy model properties
-        
+
         // original case
         //static double Sv = 7e+3; // 1/(m)
         //static double Lp = 2.7e-12; // m/(KPa sec)
@@ -104,31 +110,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double pl = 0d; // KPa
         static double k_th = 7.52e-6; // m2/(KPa sec)
 
+        #endregion
 
-
-
-        //static int nodeIdToMonitor = 36;
-
-        //The above coordinates are in the reference configuration.
-        //The actual coordinates will be computed in the analysis.
-
-        //static double structuralMonitorNodeX = 0.05;//0.05; einai gia artio arithmo diakritopoishshs me hexa
-        //static double structuralMonitorNodeY = 0.05;//0.05; einai gia artio arithmo diakritopoishshs me hexa
-        //static double structuralMonitorNodeZ = 0.05;//0.05; einai gia artio arithmo diakritopoishshs me hexa
-
-        static double structuralMonitorNodeX = 0.0;
-        static double structuralMonitorNodeY = 0.0;
-        static double structuralMonitorNodeZ = 0.1;
-
-        //static double[] structuralMonitorNodeCoords = new double[]
-        //    { 0.04930793848882013,0.04994681648346263,0.04953188199244812 };
-        //static double[] structuralMonitorNodeCoords = new double[]
-        //    { 0.04379781548934232, 0.0492383785341323, 0.02519415945383001 };
-        static double[] structuralMonitorNodeCoords = new double[]
-            { 0.0, 0.0, 0.1 };
-
-        private static int structuralMonitorID;
-        static ConvectionDiffusionDof eq7n8dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
+        #region Darcy BCs
+        // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
+        static List<(int, int, double[][], double[])> eq78BCsList = new List<(int, int, double[][], double[])>()
+        {(1, 1, new double[3][], new double[3])};
 
         //private static double boundaryValueAllBoundaries = pv;
         //private static double initialCondition = pv;
@@ -141,6 +128,37 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double modelMaxY = 0.1;
         static double modelMinZ = 0;
         static double modelMaxZ = 0.1;
+        #endregion
+
+        #region Darcy logs
+
+        #region ToDo Orestis log task 3 
+        /// <summary>
+        /// Data 1:coords, 2:outputfileString, 3: logged Doftype, 4: found node Id, 5: results 
+        /// </summary>
+        static List<(double[], string, StructuralDof, int, double[])> nodePressureLogs = new List<(double[], string, StructuralDof, int, double[])>()
+        {(new double[]{ 0.04930793848882013,0.04994681648346263,0.075 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
+
+
+        static double[] pressureMonitorNodeCoords = new double[]
+            { 0.055, 0.0559, 0.07366 };
+    private static int pressureMonitorID;
+        static ConvectionDiffusionDof eq7n8dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
+        #endregion
+
+        #region ToDo Orestis log task 4
+        /// <summary>
+        /// Data 1:coords, 2:outputfileString, 3: found element Id, 4: results 
+        /// </summary>
+        static List<(double[], string, int, double[][])> gpPressureGraadientLogs = new List<(double[], string, int, double[][])>()
+        {(new double[]{ 0.05301208792514899, 0.053825572057669926, 0.052065045951539365 }, "CenterNodePressureGradients",-1, new double[3][])};
+
+        static double[] monitoredGPcoordsPresGradient = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+
+        #endregion
+        #endregion
+
+
 
         public Coupled7and9eqsSolutionex7ref()
         {
@@ -199,13 +217,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 velocityDivergenceAtElementGaussPoints.Add(elem.Key, velocityDiv);
             }
 
-            miNormal = miTumor;
+            miNormal = miTumor; // TODO : remove this from here
             kappaNormal = kappaTumor;
 
             #region loggin (defined before model builder creation to give them nodes)
             structuralMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, structuralMonitorNodeCoords, 1e-2);
             //pressureMonitorID = Utilities.FindRandomInternalNode(comsolReader.NodesDictionary, modelMinX, modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ);
-            pressureMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, new double[] { 0.055, 0.0559, 0.07366 }, 1e-2);
+            pressureMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, pressureMonitorNodeCoords , 1e-2);
             //pressureMonitorID = structuralMonitorID;
 
             var p_i = new double[(int)(totalTime / timeStep)];
@@ -236,7 +254,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             dp_dxi.Add(gp_dP_dy_OverTime);
             dp_dxi.Add(gp_dP_dz_Overtime);
 
-            int monitoredGP_elemID = -1;
+            int monitoredGPVelocity_elemID = -1; // TODO Orestis this will be deleeted if new logs are implemented in a right way.
+            int monitoredGPpressureGrad_elemID = -1; // TODO Orestis this will be deleeted if new logs are implemented in a right way.
+
+            //TODO Orestis: implement here one for loop for each Gp Type requested Output
             #endregion
 
 
@@ -244,15 +265,14 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var eq78Model = new Eq78ModelProviderForStaggeredSolutionex7ref(comsolReader, k_th, Lp, Sv, pv, LplSvl, pl,
                 velocityDivergenceAtElementGaussPoints,
-
                 boundaryValueAllBoundaries, initialCondition, pressureMonitorID, eq7n8dofTypeToMonitor, modelMinX,
-                modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ);
+                modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ, eq78BCsList);
             //COMMITED BY NACHO 
             //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
             var eq9Model = new Eq9ModelProviderForStaggeredSolutionex7ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
                 kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
                 structuralMonitorID, eq9dofTypeToMonitor, loadedDof, load_value, modelMinX, modelMaxX, modelMinY,
-                modelMaxY, modelMinZ, modelMaxZ);
+                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList);
 
             var equationModel = new Coupled7and9eqsModelex7ref(eq78Model, eq9Model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,
@@ -272,26 +292,27 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 staggeredAnalyzer.SolveCurrentStep();
 
                 #region logging
-                monitoredGP_elemID =Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoords, 1e-1);
-
+                //TODO Orestis: implement here one for loop for each "node Type" requested  log using the following commands
+                monitoredGPVelocity_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsVelocity, 1e-1); //Todo Orestis delete these commands1
+                monitoredGPpressureGrad_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsPresGradient, 1e-1);
                 //nodal logs
-                p_i[currentTimeStep] =((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[0].GetNode(pressureMonitorID), ConvectionDiffusionDof.UnknownVariable];
+                p_i[currentTimeStep] =((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[0].GetNode(pressureMonitorID), eq7n8dofTypeToMonitor];
                 //p_i[currentTimeStep] = 0d;
                 //structuralResultsX[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), StructuralDof.TranslationX];
                 //structuralResultsY[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), StructuralDof.TranslationY];
                 //structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), StructuralDof.TranslationZ];
                 structuralResultsX[currentTimeStep] = 0d;
                 structuralResultsY[currentTimeStep] = 0d;
-                structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), StructuralDof.TranslationZ];
+                structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), eq9dofTypeToMonitor];
 
                 //gp (element) logs
-                gp_dP_dx_OverTime[currentTimeStep] =((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGP_elemID]).xcoeff_OverTimeAtGp1[0];
-                gp_dP_dy_OverTime[currentTimeStep] =((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGP_elemID]).ycoeff_OverTimeAtGp1[0];
-                gp_dP_dz_Overtime[currentTimeStep] =((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGP_elemID]).zcoeff_OverTimeAtGp1[0];
-                gp_dut_dx_OverTime[currentTimeStep]= ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence_term1[0];
-                gp_dvt_dy_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence_term2[0];
-                gp_dwt_dz_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence_term3[0];
-                gp_div_v_OverTime[currentTimeStep]= ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGP_elemID]).velocityDivergence[0];
+                gp_dP_dx_OverTime[currentTimeStep] =((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPpressureGrad_elemID]).xcoeff_OverTimeAtGp1[0];
+                gp_dP_dy_OverTime[currentTimeStep] =((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPpressureGrad_elemID]).ycoeff_OverTimeAtGp1[0];
+                gp_dP_dz_Overtime[currentTimeStep] =((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPpressureGrad_elemID]).zcoeff_OverTimeAtGp1[0];
+                gp_dut_dx_OverTime[currentTimeStep]= ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocityDivergence_term1[0];
+                gp_dvt_dy_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocityDivergence_term2[0];
+                gp_dwt_dz_OverTime[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocityDivergence_term3[0];
+                gp_div_v_OverTime[currentTimeStep]= ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocityDivergence[0];
 
                 //model maximus (DO NOT ERASE)
                 //modelMaxVelDivOverTime[currentTimeStep] = velocityDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0])).ToArray().Max();
@@ -326,7 +347,18 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             }
 
             Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1E-6));
-            //Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedPressurevalues(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(p_i, expectedPressurevalues(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(gp_dut_dx_OverTime, expected_dutdx_values(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(gp_dvt_dy_OverTime, expected_dvtdy_values(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(gp_dwt_dz_OverTime, expected_dwtdz_values(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(gp_div_v_OverTime, expected_div_vs_values(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(gp_dP_dx_OverTime, expected_dpdx_values(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(gp_dP_dy_OverTime, expected_dpdy_values(), 1E-6));
+            Assert.True(ResultChecker.CheckResults(gp_dP_dz_Overtime, expected_dpdz_values(), 1E-6));
+            
+
+
+
 
             double pr = 100;
             double Fval = 100;
@@ -377,11 +409,112 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
              6.3363370000e-07,};
         }
 
-
         public static double[] expectedPressurevalues()
         {
-            return new double[] { };
+            return new double[] {
+            6.7032500000e-05,
+            1.3046210000e-04,
+            2.2732080000e-04,
+            1.1742530000e-04,
+            1.0975700000e-05,
+            -9.5261250000e-05,
+            -2.8098200000e-04,
+            -5.0883160000e-04,
+            -7.5607230000e-04,
+            -1.0224200000e-03,
+            };
         }
+
+        public static double[] expected_dutdx_values()
+        {
+            return new double[] {
+            1.5046278105920462E-05,
+            8.8617497660219155E-05,
+            0.00026689510562568779,
+            0.00053376957178620412,
+            0.00081159440063547543,
+            0.0010392324512686118,
+            0.0011841596351018918,
+            0.0012262079260648756,
+            0.0011580851478102409,
+            0.00097666754328661932,
+            };
+        }
+
+        public static double[] expected_dvtdy_values()
+        {
+            return new double[] {
+            -4.9183616146580148E-05,
+            -0.00031990793942135367,
+            -0.0010452126289494284,
+            -0.0023121523877487429,
+            -0.0040322324519872065,
+            -0.0061097024018783273,
+            -0.0084832146516789931,
+            -0.011108490603471471,
+            -0.013965094795610738,
+            -0.017041826768603045
+            };
+        }
+
+        public static double[] expected_dwtdz_values()
+        {
+            return new double[] {
+            0.024013273060017812,
+            0.095527520745864361,
+            0.18931185141078608,
+            0.28069438945206548,
+            0.36992113985726005,
+            0.4572951803247241,
+            0.54300618640408982,
+            0.62718236463256549,
+            0.70985946584687643,
+            0.79103569439181676
+            };
+        }
+
+        public static double[] expected_div_vs_values()
+        {
+            return new double[] {
+            0.023979135721977154,
+            0.095296230304103224,
+            0.18853353388746233,
+            0.27891600663610294,
+            0.3667005018059083,
+            0.45222471037411438,
+            0.53570713138751269,
+            0.61730008195515884,
+            0.697052456199076,
+            0.77497053516650038
+            };
+        }
+
+        public static double[] expected_dpdx_values()
+        {
+            return new double[] {
+           -0.51071856532594151,
+-1.7887001011389974,
+-3.4085533329685966,
+-4.3925950633681392,
+-5.2590821460816093,
+-5.8433941491425614,
+-6.2892322572273516,
+-6.6400814219331838,
+-6.91972551191365,
+-7.1456532816455649
+            };
+        }
+
+        public static double[] expected_dpdy_values()
+        {
+            return new double[10] ;
+        }
+
+        public static double[] expected_dpdz_values()
+        {
+            return new double[10] ;
+        }
+
 
 
 

@@ -114,13 +114,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             
             //Create model for eq78 (fluid pressure)
             model[0] = Eq78ModelProvider.GetModel();
-            Eq78ModelProvider.AddAllBoundaryNodesBC(model[0]);
+            Eq78ModelProvider.AddEquation78BCs(model[0]);
             (analyzers[0], solvers[0], nlAnalyzers[0]) = Eq78ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             //Create model for eq9 (hyper-elastic material)
             model[1] = Eq9ModelProvider.GetModel();
-            Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
-            Eq9ModelProvider.AddEq9ModelLoadsCorner(model[1]);
+            Eq9ModelProvider.AddEquation9BCs(model[1]);
+            Eq9ModelProvider.AddEquation9Loads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             for (int i = 0; i < analyzers.Length; i++)
@@ -157,7 +157,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             
             //Create Initial Model eq78 (fluid pressure)
             model[0] = Eq78ModelProvider.GetModel();
-            Eq78ModelProvider.AddAllBoundaryNodesBC(model[0]);
+            Eq78ModelProvider.AddEquation78BCs(model[0]);
             if(CurrentTimeStep==0)
             {
                 Eq78ModelProvider.AddEq78ModelInitialConditions(model[0]);
@@ -166,8 +166,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             //Create model for eq9 (hyperelastic material)
             model[1] = Eq9ModelProvider.GetModel();
-            Eq9ModelProvider.AddBottomLeftRightFrontBackBCs(model[1]);
-            Eq9ModelProvider.AddEq9ModelLoadsCorner(model[1]);
+            Eq9ModelProvider.AddEquation9BCs(model[1]);
+            Eq9ModelProvider.AddEquation9Loads(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             for (int i = 0; i < analyzers.Length; i++)

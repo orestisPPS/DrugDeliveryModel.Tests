@@ -20,6 +20,7 @@ using MGroup.MSolve.AnalysisWorkflow;
 using MGroup.MSolve.Solution;
 using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
+using System.Security.AccessControl;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
@@ -46,6 +47,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         public Dictionary<int, double[]> div_vs { get; set; }
         private int nodeIdToMonitor; //TODO put it where it belongs (coupled7and9eqsSolution.cs)
         private ConvectionDiffusionDof dofTypeToMonitor;
+        private List<(int, int, double[][], double[])> eq78BCsList;
         private ComsolMeshReader modelReader;
 
 
@@ -54,7 +56,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             double kth, double Lp, double Sv, double pv, double LplSvl, double pl, Dictionary<int, double[]> div_vs,
             double boundaryValueAllBoundaries, double initialCondition,
             int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
-            double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ)
+            double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ, List<(int, int, double[][], double[])> eq78BCsList)
         {
             this.Sv = Sv;
             this.k_th = kth;
@@ -80,6 +82,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //log
             this.nodeIdToMonitor = nodeIdToMonitor;
             this.dofTypeToMonitor = dofTypeToMonitor;
+
+            this.eq78BCsList = eq78BCsList;
         }
 
         public Model GetModel()
@@ -112,6 +116,36 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusion,
                 DependentProductionCoeffs, IndependentProductionCoeffs, capacity);
             return model;
+        }
+
+        public void AddEquation78BCs(Model model)
+        {
+            foreach (var BCdata in eq78BCsList)
+            {
+                var RegionType = BCdata.Item1;
+                var Bcstype = BCdata.Item2;
+                double[][] CaracteristicCoords = BCdata.Item3;
+                double[] prescrVal = BCdata.Item4;
+
+                switch (RegionType)
+                {
+                    case 1:
+                        {
+                            AddAllBoundaryNodesBC(model);
+                            break;
+                        }
+
+                    case 2:
+                        {
+                            AddAllBoundaryNodesBC(model);
+                            break;
+                        }
+
+
+
+                }
+            }
+            
         }
 
         public void AddAllBoundaryNodesBC(Model model)  
