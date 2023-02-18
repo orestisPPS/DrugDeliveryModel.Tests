@@ -55,6 +55,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         
         Dictionary<int, double[]> elementslastConvergedDisplacements;
         private bool elementSavedDisplacementsIsInitialized = false;
+        private double density;
 
         public int loadedNode_Id { get; private set; }
 
@@ -63,7 +64,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             int nodeIdToMonitor, StructuralDof dofTypeToMonitor, StructuralDof loadedDof,
             double load_value, double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ,
-            List<(int, StructuralDof[], double[][], double[])> eq9BCsList, List<(int, StructuralDof[], double[][], double[])> eq9LoadsList)
+            List<(int, StructuralDof[], double[][], double[])> eq9BCsList, List<(int, StructuralDof[], double[][], double[])> eq9LoadsList,
+            double density)
         {
             //this.sc = sc;
             this.miNormal = miNormal;
@@ -92,6 +94,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             this.eq9BCsList = eq9BCsList;
             this.eq9LoadsList = eq9LoadsList;
 
+            this.density = density;
+
         }
 
         public Model GetModel()
@@ -109,7 +113,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             var materialTumor = new NeoHookeanMaterial3dJ3Isochoric(miTumor, kappaTumor);
 
             var elasticMaterial = new ElasticMaterial3D(youngModulus: 1, poissonRatio: 0.3);
-            var DynamicMaterial = new TransientAnalysisProperties(density: 1, rayleighCoeffMass: 0, rayleighCoeffStiffness: 0);
+            var DynamicMaterial = new TransientAnalysisProperties(density: density, rayleighCoeffMass: 0, rayleighCoeffStiffness: 0);
             var elementFactory = new ContinuumElement3DFactory(elasticMaterial, DynamicMaterial);
 
             //var domains = new Dictionary<int, double[]>(2);
@@ -137,6 +141,12 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
                 switch (RegionType)
                 {
+                    case 0:
+                        {
+                            
+                            break;
+                        }
+
                     case 1:
                         {
                             //TODO Orestis: Prosarmose tin kaloumeni parakatw methodo
@@ -265,13 +275,50 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             foreach (var BCdata in eq9BCsList)
             {
                 var RegionType = BCdata.Item1;
-                var Bcstype = BCdata.Item2;
-                double[][] CaracteristicCoords = BCdata.Item3;
-                double[] prescrVal = BCdata.Item4;
+                var doftypesToAssignPrescribed = BCdata.Item2;
+                double[][] CaracteristicNodeCoords = BCdata.Item3;
+                double[] prescrValues = BCdata.Item4;
 
                 switch (RegionType)
                 {
+                    case 0:
+                        {
+                            break;
+                        }
                     case 1:
+                        {
+                            //TODO Orestis: Prosarmose tin kaloumeni parakatw methodo
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords kai to BCdata
+                            double xCoordOfFace = CaracteristicNodeCoords[0][0];
+                            AddXFaceBcs(model, xCoordOfFace, prescrValues, doftypesToAssignPrescribed);
+                            break;
+                        }
+
+                    case 2:
+                        {
+                            //TODO Orestis: copy  AddBottomBCs() method from
+                            //Eq9ModelProviderForStaggeredSolutionex83.cs
+                            // kai prosarmose tin 
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords
+                            double yCoordOfFace = CaracteristicNodeCoords[0][1];
+                            AddYFaceBcs(model, yCoordOfFace, prescrValues, doftypesToAssignPrescribed);
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            //TODO Orestis: copy  AddBottomLeftFrontBackBCs() method from
+                            //Eq9ModelProviderForStaggeredSolutionex6_1.cs
+                            // kai prosarmose tin 
+                            // na min kanei xrisi kanenos field kai na 
+                            // axiopoiei to caracteristic coords
+                            double zCoordOfFace = CaracteristicNodeCoords[0][2];
+                            AddZFaceBcs(model, zCoordOfFace, prescrValues, doftypesToAssignPrescribed);
+                            break;
+                        }
+                    case 4:
                         {
                             //TODO Orestis: Prosarmose tin kaloumeni parakatw methodo
                             // na min kanei xrisi kanenos field kai na 
@@ -279,8 +326,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                             AddBottomLeftRightFrontBackBCs(model);
                             break;
                         }
-
-                    case 2:
+                    case 5:
                         {
                             //TODO Orestis: copy  AddBottomBCs() method from
                             //Eq9ModelProviderForStaggeredSolutionex83.cs
@@ -292,7 +338,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                             break;
                         }
 
-                    case 3:
+                    case 6:
                         {
                             //TODO Orestis: copy  AddBottomLeftFrontBackBCs() method from
                             //Eq9ModelProviderForStaggeredSolutionex6_1.cs

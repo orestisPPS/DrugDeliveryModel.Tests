@@ -34,6 +34,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static int currentTimeStep = 0;
 
         #region Structural model properties
+        static double density = 1;
         static double miNormal = 5; //KPa
         static double kappaNormal = 6.667; //Kpa
 
@@ -51,7 +52,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
         static List<(int, StructuralDof[], double[][], double[])> eq9BCsList = new List<(int, StructuralDof[], double[][], double[])>()
-        {(1, new StructuralDof[3], new double[3][], new double[3])};
+        {(4, new StructuralDof[3], new double[3][], new double[3])};
 
         #endregion
 
@@ -121,19 +122,27 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         #region Darcy BCs
         // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
         static List<(int, int, double[][], double[])> eq78BCsList = new List<(int, int, double[][], double[])>()
-        {(1, 1, new double[3][], new double[3])};
+        {(4, 1, new double[3][], new double[3])};
 
         //private static double boundaryValueAllBoundaries = pv;
         //private static double initialCondition = pv;
         private static double boundaryValueAllBoundaries = 0;
-        private static double initialCondition = 0;
-
+       
         static double modelMinX = 0;
         static double modelMaxX = 0.1;
         static double modelMinY = 0;
         static double modelMaxY = 0.1;
         static double modelMinZ = 0;
         static double modelMaxZ = 0.1;
+        #endregion
+
+        #region Darcy Initial condition values
+        // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
+        static List<(int, int, double[][], double[])> eq78InitialConditionsList = new List<(int, int, double[][], double[])>()
+        {(0, 0, new double[3][], new double[3])};
+
+        
+        private static double initialCondition = 0; // TODO Orestis delete when obsolete
         #endregion
 
         #region Darcy logs
@@ -273,13 +282,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 LplSvl_tumor, LplSvl_host, pl,
                 velocityDivergenceAtElementGaussPoints,
                 boundaryValueAllBoundaries, initialCondition, pressureMonitorID, eq7n8dofTypeToMonitor, modelMinX,
-                modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ, eq78BCsList);
+                modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ, eq78BCsList,eq78InitialConditionsList);
             //COMMITED BY NACHO 
             //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
             var eq9Model = new Eq9ModelProviderForStaggeredSolutionex7ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
                 kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
                 structuralMonitorID, eq9dofTypeToMonitor, loadedDof, load_value, modelMinX, modelMaxX, modelMinY,
-                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList);
+                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList, density);
 
             var equationModel = new Coupled7and9eqsModelex7ref(eq78Model, eq9Model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,

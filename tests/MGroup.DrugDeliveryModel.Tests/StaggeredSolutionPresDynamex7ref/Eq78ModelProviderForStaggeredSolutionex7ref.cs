@@ -50,6 +50,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private int nodeIdToMonitor; //TODO put it where it belongs (coupled7and9eqsSolution.cs)
         private ConvectionDiffusionDof dofTypeToMonitor;
         private List<(int, int, double[][], double[])> eq78BCsList;
+        private List<(int, int, double[][], double[])> eq78InitialConditionsList;
+
         private ComsolMeshReader modelReader;
 
 
@@ -58,7 +60,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             double k_th_tumor, double k_th_host, double Lp, double Sv, double pv, double LplSvl_tumor, double LplSvl_host,
             double pl, Dictionary<int, double[]> div_vs, double boundaryValueAllBoundaries, double initialCondition,
             int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor, double modelMinX, double modelMaxX,
-            double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ, List<(int, int, double[][], double[])> eq78BCsList)
+            double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ,
+            List<(int, int, double[][], double[])> eq78BCsList, List<(int, int, double[][], double[])> eq78InitialConditionsList)
         {
             this.Sv = Sv;
             this.k_th_tumor = k_th_tumor;
@@ -88,6 +91,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             this.dofTypeToMonitor = dofTypeToMonitor;
 
             this.eq78BCsList = eq78BCsList;
+            this.eq78InitialConditionsList = eq78InitialConditionsList;
         }
 
         public Model GetModel()
@@ -144,11 +148,27 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 {
                     case 1:
                         {
-                            AddAllBoundaryNodesBC(model);
+                            double xCoordin = CaracteristicCoords[0][0];
+                            AddXFaceBcs(model, xCoordin, prescrVal[0], ConvectionDiffusionDof.UnknownVariable);
                             break;
                         }
 
                     case 2:
+                        {
+                            double yCoordin = CaracteristicCoords[0][1];
+                            AddYFaceBcs(model, yCoordin, prescrVal[0], ConvectionDiffusionDof.UnknownVariable);
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            // TODO: pithanws to ConvectionDiffusionDof.UnknownVariable antikathistatai me duo periptwseis analoga to Bcstype
+                            double zCoordin = CaracteristicCoords[0][2];
+                            AddZFaceBcs(model, zCoordin, prescrVal[0], ConvectionDiffusionDof.UnknownVariable);
+                            break;
+                        }
+
+                    case 4:
                         {
                             AddAllBoundaryNodesBC(model);
                             break;
@@ -198,6 +218,53 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(dirichletBCs, new INodalConvectionDiffusionNeumannBoundaryCondition[] {}));
         }
 
+        public void AddXFaceBcs(Model model, double xCoordOfFace, double dirichleValue, ConvectionDiffusionDof dofTypeToPrescribeDircihle)
+        {
+
+            var xFaceNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(xCoordOfFace - node.X) < 1E-9) xFaceNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in xFaceNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, dofTypeToPrescribeDircihle, dirichleValue));
+            }
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
+        public void AddYFaceBcs(Model model, double yCoordOfFace, double dirichleValue, ConvectionDiffusionDof dofTypeToPrescribeDircihle)
+        {
+
+            var yFaceNodes = new List<INode>();
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(yCoordOfFace - node.Y) < 1E-9) yFaceNodes.Add(node);
+            }
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+            foreach (var node in yFaceNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, dofTypeToPrescribeDircihle, dirichleValue));
+            }
+
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+                dirichletBCs,
+                new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+            ));
+
+        }
+
+
         public void AddZFaceBcs(Model model, double zCoordOfFace, double dirichleValue, ConvectionDiffusionDof dofTypeToPrescribeDircihle)
         {
 
@@ -210,7 +277,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var dirichletBCs = new List<NodalUnknownVariable>();
             foreach (var node in zFaceNodes)
             {
-                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, dirichleValue));
+                dirichletBCs.Add(new NodalUnknownVariable(node, dofTypeToPrescribeDircihle, dirichleValue));
             }
 
 
@@ -222,6 +289,34 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         }
 
         public void AddEq78ModelInitialConditions(Model model)
+        {
+            foreach (var BCdata in eq78InitialConditionsList)
+            {
+                var RegionType = BCdata.Item1;
+                var Bcstype = BCdata.Item2;
+                double[][] CaracteristicCoords = BCdata.Item3;
+                double[] prescrVal = BCdata.Item4;
+
+                switch (RegionType)
+                {
+                    case 0:
+                        {
+                            break;
+                        }
+                    case 1:
+                        {
+
+                            AddInitialCOnditionsFoTheInnerBulKNOdes(model);
+                            break;
+                        }
+
+
+
+                }
+            }
+        }
+
+        public void AddInitialCOnditionsFoTheInnerBulKNOdes(Model model)//TODO Orestis pass here the initial condition value from the eq78InitialConditionsList. data and delete it from fields1
         {
             var topNodes = new List<INode>();
             var bottomNodes = new List<INode>();
