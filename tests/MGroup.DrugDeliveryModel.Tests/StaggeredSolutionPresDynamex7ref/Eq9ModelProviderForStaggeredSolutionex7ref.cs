@@ -25,6 +25,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 {
 	public class Eq9ModelProviderForStaggeredSolutionex7ref
     {
+        bool includeInertia= false;
         //private double sc = 0.1;
         private double miNormal;// = 5;//KPa
         private double kappaNormal;// = 6.667; //Kpa
@@ -65,7 +66,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             int nodeIdToMonitor, StructuralDof dofTypeToMonitor, StructuralDof loadedDof,
             double load_value, double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ,
             List<(int, StructuralDof[], double[][], double[])> eq9BCsList, List<(int, StructuralDof[], double[][], double[])> eq9LoadsList,
-            double density)
+            double density, bool includeInertia)
         {
             //this.sc = sc;
             this.miNormal = miNormal;
@@ -95,6 +96,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             this.eq9LoadsList = eq9LoadsList;
 
             this.density = density;
+
+            this.includeInertia = includeInertia;
 
         }
 
@@ -565,11 +568,19 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 }, algebraicModel
             );
 
-            //var analyzer = (new PseudoTransientAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentStep: currentStep)).Build();
+
+
+
+            //var 
             var analyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime,false, currentStep: currentStep);
             analyzerBuilder.SetNewmarkParametersForConstantAcceleration();
             //var analyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentTimeStep: currentStep, bdfOrder: 5);
-            var analyzer = analyzerBuilder.Build();
+            IParentAnalyzer analyzer = analyzerBuilder.Build();
+
+            if(!includeInertia)
+            { analyzer = (new PseudoTransientAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, currentStep: currentStep)).Build(); }
+
+
 
 
             //Sparse tet Mesh

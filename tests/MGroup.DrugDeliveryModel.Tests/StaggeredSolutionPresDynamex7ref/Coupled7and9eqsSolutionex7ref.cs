@@ -32,6 +32,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         const double totalTime = 0.0001; // in sec
         static int incrementsPertimeStep = 1;
         static int currentTimeStep = 0;
+        static bool includeInertia = true;
 
         #region Structural model properties
         static double density = 1;
@@ -288,7 +289,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var eq9Model = new Eq9ModelProviderForStaggeredSolutionex7ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
                 kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
                 structuralMonitorID, eq9dofTypeToMonitor, loadedDof, load_value, modelMinX, modelMaxX, modelMinY,
-                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList, density);
+                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList, density, includeInertia);
 
             var equationModel = new Coupled7and9eqsModelex7ref(eq78Model, eq9Model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,

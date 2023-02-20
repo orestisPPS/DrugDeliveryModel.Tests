@@ -35,6 +35,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         static int incrementsPertimeStep = 1; //1000 kg / m3
         static int currentTimeStep = 0;
+        static bool includeInertia = false;
+
 
         #region Structural model properties
         static double density = 1;
@@ -77,10 +79,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// Data 1:coords, 2:outputfileString, 3: logged Doftype, 4: found node Id, 5: results 
         /// </summary>
         static List<(double[], string, StructuralDof, int, double[])> nodeDisplacementLogs = new List<(double[], string, StructuralDof, int, double[])>()
-        {(new double[]{0.001, 0.001, 0.001 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
+        {(new double[]{0.002058473075774387,0.003314043337549557,0 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
 
         static double[] structuralMonitorNodeCoords = new double[]
-            {0.001, 0.001, 0.001};
+            {0.0019508005811257993, 0.0016034278119095656, 0.000887604571713369};
         private static int structuralMonitorID;
         static StructuralDof eq9dofTypeToMonitor = StructuralDof.TranslationZ;
         #endregion
@@ -100,16 +102,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         //Darcy model properties
 
-        ////original case
-        //static double Sv = 7e+3; // 1/(m) .
-        //static double Lp = 2.7e-12; // m/(KPa sec) .
-        //static double LplSvl_tumor = 0; // 1/(KPa sec) .
-        //static double LplSvl_host = 3.75e-1; // 1/(KPa sec) .
-        //static double pv = 4; // kPa .
-        //static double pl = 0d; // KPa .
-        //static double k_th_tumor = 7.52e-11; // m2/(KPa sec) .
-        //static double k_th_host = 7.52e-13; // m2/(KPa sec) .
-
         //original case
         static double Sv = 7e+3; // 1/(m) .
         static double Lp = 2.7e-12; // m/(KPa sec) .
@@ -117,8 +109,18 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double LplSvl_host = 3.75e-1; // 1/(KPa sec) .
         static double pv = 4; // kPa .
         static double pl = 0d; // KPa .
-        static double k_th_tumor = 7.52e-5; // m2/(KPa sec) .
-        static double k_th_host = 7.52e-7; // m2/(KPa sec) .
+        static double k_th_tumor = 7.52e-11; // m2/(KPa sec) .
+        static double k_th_host = 7.52e-13; // m2/(KPa sec) .
+
+        ////original case
+        //static double Sv = 7e+3; // 1/(m) .
+        //static double Lp = 2.7e-12; // m/(KPa sec) .
+        //static double LplSvl_tumor = 0; // 1/(KPa sec) .
+        //static double LplSvl_host = 3.75e-1; // 1/(KPa sec) .
+        //static double pv = 4; // kPa .
+        //static double pl = 0d; // KPa .
+        //static double k_th_tumor = 7.52e-5; // m2/(KPa sec) .
+        //static double k_th_host = 7.52e-7; // m2/(KPa sec) .
 
 
         #endregion
@@ -160,11 +162,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// Data 1:coords, 2:outputfileString, 3: logged Doftype, 4: found node Id, 5: results 
         /// </summary>
         static List<(double[], string, StructuralDof, int, double[])> nodePressureLogs = new List<(double[], string, StructuralDof, int, double[])>()
-        {(new double[]{ 0.001,0.001,0.001 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
+        {(new double[]{ 2.500023878877312E-4,0,0 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
 
 
         static double[] pressureMonitorNodeCoords = new double[]
-            {  0.001,0.001,0.001 };
+            {  0.0035115707034252424,0.002830451790631984,0.0013827120045605446 };
+        //static double[] pressureMonitorNodeCoords = new double[]
+        //    {  0.005, 0, 0 }; //node 190
         private static int pressureMonitorID;
         static ConvectionDiffusionDof eq7n8dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
         #endregion
@@ -298,7 +302,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var eq9Model = new Eq9ModelProviderForStaggeredSolutionex7ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
                 kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
                 structuralMonitorID, eq9dofTypeToMonitor, loadedDof, load_value, modelMinX, modelMaxX, modelMinY,
-                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList, density);
+                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList, density,includeInertia);
 
             var equationModel = new Coupled7and9eqsModelex7ref(eq78Model, eq9Model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,
