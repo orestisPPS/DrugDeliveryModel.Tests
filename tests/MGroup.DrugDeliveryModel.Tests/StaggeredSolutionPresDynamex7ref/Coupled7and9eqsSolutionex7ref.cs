@@ -21,7 +21,6 @@ using MGroup.FEM.Structural.Continuum;
 using TriangleNet.Meshing.Algorithm;
 using System.Xml.Linq;
 using MGroup.FEM.ConvectionDiffusion.Tests.Commons;
-
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
     public class Coupled7and9eqsSolutionex7ref
@@ -56,15 +55,47 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         #endregion
 
+        //Array of doublle arrys that contain various node coordintates (in the same face)
+        private double[][] test = new double[2][] { new double[] { 1, 1, 1 }, new double[] { 1, 1, 1 } };
+        
         #region Structural model BCs and Loads
+        
         // Data 1:RegionType, 2:LoadedDofs, 3: Region CaracteristicCoords Id, 4: values of loaded dofs values
-        static List<(int, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(int, StructuralDof[], double[][], double[])>()
-        {(1, new StructuralDof[3], new double[3][], new double[3])};
+        //int : Flux, Distributed, Bounded
+        // static List<(int, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(int, StructuralDof[], double[][], double[])>()
+        // {(1, new StructuralDof[3], new double[3][], new double[3])};
 
-        // strucutral model Loads TODO Orestis: delete these loada data and implement them in load list
-        static StructuralDof loadedDof = StructuralDof.TranslationZ;
-        //static double load_value = 0.0001 / 4; //[kN]
-        static double load_value = 0.0001 / 4; //[kN]
+
+        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>
+            eq9ConstraintsList =
+                new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
+                {
+                    (BoundaryConditionsUtility.BoundaryConditionCase.BottomDirichlet,
+                        new StructuralDof[1] { StructuralDof.TranslationZ }, new double[1][]{new double[3] {0,0,0}}, new double[] { 0.0 }),
+                    (BoundaryConditionsUtility.BoundaryConditionCase.LeftDirichlet,
+                        new StructuralDof[1] { StructuralDof.TranslationX }, new double[1][]{new double[3] {0,0,0}}, new double[] { 0.0 }),
+                    (BoundaryConditionsUtility.BoundaryConditionCase.RightDirichlet,
+                        new StructuralDof[1] { StructuralDof.TranslationX }, new double[1][]{new double[3] {0.1,0,0}}, new double[] { 0.0 }),
+                    (BoundaryConditionsUtility.BoundaryConditionCase.FrontDirichlet,
+                        new StructuralDof[1] { StructuralDof.TranslationY }, new double[1][]{new double[3] {0,0,0}}, new double[] { 0.0 }),
+                    (BoundaryConditionsUtility.BoundaryConditionCase.BackDirichlet,
+                        new StructuralDof[1] { StructuralDof.TranslationY }, new double[1][]{new double[3] {0,0.1,0}}, new double[] { 0.0 }),
+                    
+                };
+        
+        static double[] coordsLoad1 = new double[3] { 0.0, 0.0, 0.1 };
+        static double[] coordsLoad2 = new double[3] { 0.1, 0.0, 0.1 };
+        static double[] coordsLoad3 = new double[3] { 0.0, 0.1, 0.1 };
+        static double[] coordsLoad4 = new double[3] { 0.1, 0.1, 0.1 };
+        static double[][] loadCoords = new double[4][] { coordsLoad1, coordsLoad2, coordsLoad3, coordsLoad4 };
+        static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
+        {
+            (BoundaryConditionsUtility.BoundaryConditionCase.RightPointForce, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 * 1000d / 4d})
+        };
+        
+
+
+
         #endregion
 
         #region ToDo Orestis log task 1 
@@ -283,12 +314,15 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 velocityDivergenceAtElementGaussPoints,
                 boundaryValueAllBoundaries, initialCondition, pressureMonitorID, eq7n8dofTypeToMonitor, modelMinX,
                 modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ, eq78BCsList,eq78InitialConditionsList);
-            //COMMITED BY NACHO 
-            //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
+            
             var eq9Model = new Eq9ModelProviderForStaggeredSolutionex7ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
                 kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
-                structuralMonitorID, eq9dofTypeToMonitor, loadedDof, load_value, modelMinX, modelMaxX, modelMinY,
-                modelMaxY, modelMinZ, modelMaxZ, eq9BCsList, eq9LoadsList, density);
+                structuralMonitorID, eq9dofTypeToMonitor,eq9ConstraintsList, eq9LoadsList, density);
+            
+            
+            //COMMITED BY NACHO 
+            //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
+           
 
             var equationModel = new Coupled7and9eqsModelex7ref(eq78Model, eq9Model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,

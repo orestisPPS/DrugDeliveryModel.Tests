@@ -54,16 +54,18 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private static List<(INode node, IDofType dof)> watchDofs = new List<(INode node, IDofType dof)>();
 
         // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
-        static List<(int, StructuralDof[], double[][], double[])> eq9BCsList = new List<(int, StructuralDof[], double[][], double[])>()
-        {(1, new StructuralDof[1]{StructuralDof.TranslationX}, new double[1][]{new double[] {0,0,0} }, new double[1]{0}),
+        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>
+            eq9BCsList =
+                new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>();
+        /*{(1, new StructuralDof[1]{StructuralDof.TranslationX}, new double[1][]{new double[] {0,0,0} }, new double[1]{0}),
             (2, new StructuralDof[1]{StructuralDof.TranslationY}, new double[1][]{new double[] {0,0,0} }, new double[1]{0}),
-            (3, new StructuralDof[1]{StructuralDof.TranslationZ}, new double[1][]{new double[] {0,0,0} }, new double[1]{0})};
+            (3, new StructuralDof[1]{StructuralDof.TranslationZ}, new double[1][]{new double[] {0,0,0} }, new double[1]{0})};*/
 
         #endregion
 
         #region Structural model BCs and Loads
         // Data 1:RegionType, 2:LoadedDofs, 3: Region CaracteristicCoords Id, 4: values of loaded dofs values
-        static List<(int, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(int, StructuralDof[], double[][], double[])>()
+        static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
         {(0, new StructuralDof[3], new double[3][], new double[3])};
 
         // strucutral model Loads TODO Orestis: delete these loada data and implement them in load list
@@ -245,7 +247,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             miNormal = miTumor; // TODO : remove this from here
             kappaNormal = kappaTumor;
 
-            #region loggin (defined before model builder creation to give them nodes)
+             #region loggin (defined before model builder creation to give them nodes)
             structuralMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, structuralMonitorNodeCoords, 1e-2);
             //pressureMonitorID = Utilities.FindRandomInternalNode(comsolReader.NodesDictionary, modelMinX, modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ);
             pressureMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, pressureMonitorNodeCoords , 1e-2);

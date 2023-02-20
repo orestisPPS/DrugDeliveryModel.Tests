@@ -4,17 +4,32 @@ using MGroup.NumericalAnalyzers.Logging;
 using MGroup.MSolve.Discretization.Entities;
 using Xunit;
 using System;
+using MGroup.Constitutive.ConvectionDiffusion;
 using MGroup.Constitutive.Structural.BoundaryConditions;
 using MGroup.Constitutive.Structural.Continuum;
 using MGroup.Constitutive.Structural.Transient;
 using MGroup.Constitutive.Structural;
 using MGroup.FEM.ConvectionDiffusion.Isoparametric;
 using MGroup.FEM.Structural.Continuum;
+using MGroup.MSolve.Discretization.Dofs;
 
 namespace MGroup.DrugDeliveryModel.Tests.Commons
 {
+
+
+	public enum MSolveCases
+	{
+		p_u_OneWay_FreeTopFace,
+		p_u_OneWay_FreeTopRightFaces,
+		u_p_OneWay_FreeTopFace,
+		u_p_OneWay_FreeTopRightFaces,
+		u_P
+	}
+
 	public static class Utilities
 	{
+
+
 		public static Model GetParallelepipedMesh()
 		{
 			var nnx = 3;
@@ -213,7 +228,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Commons
 					id = node.ID;
 				}
 			}
-			Console.WriteLine("Node found with ID: " + id + " and Coordinates: " + nodes[id].X + " " + nodes[id].Y + " " +
+
+			Console.WriteLine("Node found with ID: " + id + " and Coordinates: " + nodes[id].X + " " + nodes[id].Y +
+			                  " " +
 			                  nodes[id].Z);
 			return id;
 		}
@@ -234,12 +251,15 @@ namespace MGroup.DrugDeliveryModel.Tests.Commons
 					id = element.Key;
 				}
 			}
-			var foundGpCoords = ((ConvectionDiffusionElement3D)model.ElementsDictionary[id]).GetGaussPointsCoordinates(0);
-			Console.WriteLine("GP with coordinates: " + foundGpCoords[0] + " " + foundGpCoords[1] + " " + foundGpCoords[2] +
+
+			var foundGpCoords =
+				((ConvectionDiffusionElement3D)model.ElementsDictionary[id]).GetGaussPointsCoordinates(0);
+			Console.WriteLine("GP with coordinates: " + foundGpCoords[0] + " " + foundGpCoords[1] + " " +
+			                  foundGpCoords[2] +
 			                  " is in element with id: " + id);
 			return id;
 		}
-		
+
 		public static List<INode> FindElementNodesFromElementId(Model model, int elementId)
 		{
 			var element = model.ElementsDictionary[elementId];
@@ -247,14 +267,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Commons
 			for (int i = 0; i < element.Nodes.Count; i++)
 			{
 				nodes.Add(element.Nodes[i]);
-				Console.WriteLine("Node ID: " + nodes[i].ID + " Node X: " + nodes[i].X + " Node Y: " + nodes[i].Y + " Node Z: " + nodes[i].Z);
+				Console.WriteLine("Node ID: " + nodes[i].ID + " Node X: " + nodes[i].X + " Node Y: " + nodes[i].Y +
+				                  " Node Z: " + nodes[i].Z);
 			}
+
 			return nodes;
 		}
 
-		public static int FindRandomInternalNode(Dictionary<int, Node> nodes,  double minX, double maxX,
-																			   double minY, double maxY,
-																			   double minZ, double maxZ)
+		public static int FindRandomInternalNode(Dictionary<int, Node> nodes, double minX, double maxX,
+			double minY, double maxY,
+			double minZ, double maxZ)
 		{
 			var id = -1;
 
@@ -262,21 +284,20 @@ namespace MGroup.DrugDeliveryModel.Tests.Commons
 			{
 				var coords = new double[] { node.Value.X, node.Value.Y, node.Value.Z };
 				if (coords[0] > minX && coords[0] < maxX &&
-					coords[1] > minY && coords[1] < maxY &&
-					coords[2] > minZ && coords[2] < maxZ)
+				    coords[1] > minY && coords[1] < maxY &&
+				    coords[2] > minZ && coords[2] < maxZ)
 				{
 					id = node.Key;
 					break;
 				}
+
 				id = node.Key;
 			}
-			Console.WriteLine("Internal Node found with ID: " + id + " and Coordinates: " + nodes[id].X + " " + nodes[id].Y + " " +
+
+			Console.WriteLine("Internal Node found with ID: " + id + " and Coordinates: " + nodes[id].X + " " +
+			                  nodes[id].Y + " " +
 			                  nodes[id].Z);
 			return id;
 		}
-		
-
-		
 	}
-
 }

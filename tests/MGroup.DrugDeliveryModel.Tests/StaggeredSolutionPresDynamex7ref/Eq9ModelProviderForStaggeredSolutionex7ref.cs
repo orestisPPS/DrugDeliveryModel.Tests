@@ -32,11 +32,14 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         private double kappaTumor;// = 216.7; //Kpa
 
 
-        private List<(int, StructuralDof[], double[][], double[])> eq9LoadsList;
+        private List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9LoadsList;
+        private List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9BCsList;
+        
+        
         private StructuralDof loadedDof; //TODO Orestis :if AddLoads9BCs() is implemented in a right way thhese will not be necessary and be deleted.
         public double load_value { get; private set; }//TODO Orestis :if AddLoads9BCs() is implemented in a right way thhese will not be necessary and be deleted.
 
-        private List<(int, StructuralDof[], double[][], double[])> eq9BCsList;
+
         private double modelMinX; //TODO Orestis :if AddEquation9BCs() is implemented in a right way thhese will not be necessary and be deleted.
         private double modelMaxX;
         private double modelMinY;
@@ -64,7 +67,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             int nodeIdToMonitor, StructuralDof dofTypeToMonitor, StructuralDof loadedDof,
             double load_value, double modelMinX, double modelMaxX, double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ,
-            List<(int, StructuralDof[], double[][], double[])> eq9BCsList, List<(int, StructuralDof[], double[][], double[])> eq9LoadsList,
+            List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9BCsList,
+            List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9LoadsList,
             double density)
         {
             //this.sc = sc;
@@ -90,6 +94,41 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             //Load
             this.loadedDof = loadedDof;
             this.load_value = load_value;
+
+            this.eq9BCsList = eq9BCsList;
+            this.eq9LoadsList = eq9LoadsList;
+
+            this.density = density;
+
+        }
+        
+        public Eq9ModelProviderForStaggeredSolutionex7ref(ComsolMeshReader comsolReader, double sc, double miNormal, double kappaNormal, double miTumor,
+            double kappaTumor, double timeStep, double totalTime,
+            Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
+            int nodeIdToMonitor, StructuralDof dofTypeToMonitor,
+            List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9BCsList,
+            List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9LoadsList,
+            double density)
+        {
+            //this.sc = sc;
+            this.miNormal = miNormal;
+            this.kappaNormal = kappaNormal;
+            this.miTumor = miTumor;
+            this.kappaTumor = kappaTumor;
+            this.pressureTensorDivergenceAtElementGaussPoints = pressureTensorDivergenceAtElementGaussPoints;
+            this.lambda = lambda;
+            reader = comsolReader;
+
+            this.modelMinX = modelMinX;
+            this.modelMaxX = modelMaxX;
+            this.modelMinY = modelMinY;
+            this.modelMaxY = modelMaxY;
+            this.modelMinZ = modelMinZ;
+            this.modelMaxZ = modelMaxZ;
+
+            //log
+            this.nodeIdToMonitor = nodeIdToMonitor;
+            this.dofTypeToMonitor = dofTypeToMonitor;
 
             this.eq9BCsList = eq9BCsList;
             this.eq9LoadsList = eq9LoadsList;
@@ -141,6 +180,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
                 switch (RegionType)
                 {
+                    /*
                     case 0:
                         {
                             
@@ -178,6 +218,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                             //se mia epilegomeni epifaneia
                             break;
                         }
+                        */
 
                 }
             }
@@ -281,6 +322,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
 
                 switch (RegionType)
                 {
+                    /*
                     case 0:
                         {
                             break;
@@ -349,6 +391,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                             //AddAllBoundaryNodesBC(model);
                             break;
                         }
+                        */
 
                 }
             }
