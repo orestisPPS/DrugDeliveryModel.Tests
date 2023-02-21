@@ -66,9 +66,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         // {(1, new StructuralDof[3], new double[3][], new double[3])};
 
 
-        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>
-            eq9ConstraintsList =
-                new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
+        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC = 
+            new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
                 {
                     (BoundaryConditionsUtility.BoundaryConditionCase.BottomDirichlet,
                         new StructuralDof[1] { StructuralDof.TranslationZ }, new double[1][]{new double[3] {0,0,0}}, new double[] { 0.0 }),
@@ -88,12 +87,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double[] coordsLoad3 = new double[3] { 0.0, 0.1, 0.1 };
         static double[] coordsLoad4 = new double[3] { 0.1, 0.1, 0.1 };
         static double[][] loadCoords = new double[4][] { coordsLoad1, coordsLoad2, coordsLoad3, coordsLoad4 };
-        static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
+        static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC =
+            new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
         {
-            (BoundaryConditionsUtility.BoundaryConditionCase.RightPointForce, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 * 1000d / 4d})
+            (BoundaryConditionsUtility.BoundaryConditionCase.RightPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 * 1000d / 4d})
         };
         
-
 
 
         #endregion
@@ -151,29 +150,32 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         #endregion
 
         #region Darcy BCs
-        // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
-        static List<(int, int, double[][], double[])> eq78BCsList = new List<(int, int, double[][], double[])>()
-        {(4, 1, new double[3][], new double[3])};
+        
+        private static ConvectionDiffusionDof[] constrainedDofType = new ConvectionDiffusionDof[1] { ConvectionDiffusionDof.UnknownVariable };
+        private static double[] boundaryValue = new double[1] { 0d };
+        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> pressureDirichletBC = 
+            new List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
+            {
+                (BoundaryConditionsUtility.BoundaryConditionCase.BottomDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryConditionsUtility.BoundaryConditionCase.LeftDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryConditionsUtility.BoundaryConditionCase.RightDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
+                (BoundaryConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryConditionsUtility.BoundaryConditionCase.BackDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0.1,0}}, boundaryValue),
+                    
+            };
 
-        //private static double boundaryValueAllBoundaries = pv;
-        //private static double initialCondition = pv;
+        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>
+            pressureNeumannBC = new List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double [])>();
+        
         private static double boundaryValueAllBoundaries = 0;
-       
-        static double modelMinX = 0;
-        static double modelMaxX = 0.1;
-        static double modelMinY = 0;
-        static double modelMaxY = 0.1;
-        static double modelMinZ = 0;
-        static double modelMaxZ = 0.1;
         #endregion
 
         #region Darcy Initial condition values
         // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
-        static List<(int, int, double[][], double[])> eq78InitialConditionsList = new List<(int, int, double[][], double[])>()
-        {(0, 0, new double[3][], new double[3])};
+        static List<(int, int, double[][], double[])> eq78InitialConditionsList = new List<(int, int, double[][], double[])>() {(0, 0, new double[3][], new double[3])};
 
-        
         private static double initialCondition = 0; // TODO Orestis delete when obsolete
+        
         #endregion
 
         #region Darcy logs
@@ -184,12 +186,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// </summary>
         static List<(double[], string, StructuralDof, int, double[])> nodePressureLogs = new List<(double[], string, StructuralDof, int, double[])>()
         {(new double[]{ 0.04930793848882013,0.04994681648346263,0.075 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
-
-
-        static double[] pressureMonitorNodeCoords = new double[]
-            { 0.055, 0.0559, 0.07366 };
-    private static int pressureMonitorID;
+        
+        static double[] pressureMonitorNodeCoords = new double[] { 0.055, 0.0559, 0.07366 };
+        
+        private static int pressureMonitorID;
+        
         static ConvectionDiffusionDof eq7n8dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
+        
         #endregion
 
         #region ToDo Orestis log task 4
@@ -203,9 +206,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         #endregion
         #endregion
-
-
-
+        
         public Coupled7and9eqsSolutionex7ref()
         {
             IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
@@ -306,32 +307,21 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //TODO Orestis: implement here one for loop for each Gp Type requested Output
             #endregion
 
-
-
-
+            //Create Model For Pressure
             var eq78Model = new Eq78ModelProviderForStaggeredSolutionex7ref(comsolReader, k_th_tumor, k_th_host, Lp, Sv, pv,
-                LplSvl_tumor, LplSvl_host, pl,
-                velocityDivergenceAtElementGaussPoints,
-                boundaryValueAllBoundaries, initialCondition, pressureMonitorID, eq7n8dofTypeToMonitor, modelMinX,
-                modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ, eq78BCsList,eq78InitialConditionsList);
+                LplSvl_tumor, LplSvl_host, pl, velocityDivergenceAtElementGaussPoints, pressureMonitorID, eq7n8dofTypeToMonitor,pressureDirichletBC, pressureNeumannBC);
             
-            var eq9Model = new Eq9ModelProviderForStaggeredSolutionex7ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
-                kappaTumor, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
-                structuralMonitorID, eq9dofTypeToMonitor,eq9ConstraintsList, eq9LoadsList, density);
-            
-            
+            //Create Model For Structural
+            var eq9Model = new Eq9ModelProviderForStaggeredSolutionEx7Ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
+                kappaTumor, density, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
+                structuralMonitorID, eq9dofTypeToMonitor,structuralNeumannBC, structuralDirichletBC);
+             
             //COMMITED BY NACHO 
             //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
            
-
             var equationModel = new Coupled7and9eqsModelex7ref(eq78Model, eq9Model, comsolReader, lambda,
                 pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,
                 totalTime, incrementsPertimeStep);
-
-
-
-            
-
 
             var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers,
                 equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance: 0.001);                                                       
@@ -342,6 +332,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 staggeredAnalyzer.SolveCurrentStep();
 
                 #region logging
+                
                 //TODO Orestis: implement here one for loop for each "node Type" requested  log using the following commands
                 monitoredGPVelocity_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsVelocity, 1e-1); //Todo Orestis delete these commands1
                 monitoredGPpressureGrad_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsPresGradient, 1e-1);

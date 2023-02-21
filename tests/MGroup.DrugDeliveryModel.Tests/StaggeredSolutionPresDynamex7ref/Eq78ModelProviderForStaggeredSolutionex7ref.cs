@@ -26,14 +26,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
     public class Eq78ModelProviderForStaggeredSolutionex7ref
     {
-
-        private double modelMinX;
-        private double modelMaxX;
-        private double modelMinY;
-        private double modelMaxY;
-        private double modelMinZ;
-        private double modelMaxZ;
-
         private double Sv;
         private double k_th_tumor;
         private double k_th_host;
@@ -43,25 +35,45 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private double LplSvl_tumor;
         private double LplSvl_host;
 
-        private double boundaryValue;
+        /// <summary>
+        /// List containing the DIRICHLET boundary conditions for the Convection Diffusion problem.
+        /// Item1 : Boundary condition case with respect to the face of the domain (LeftDirichlet, TopDirichlet etc).
+        /// Item2 : An StructuralDof array containing the DOFs that are constrained.
+        /// Item3 : A jagged array of arrays that contain all the coordinate sets of the bounded dofs. The lenght of
+        ///         array is equal to the number of constrained dofs. Each array contains the coordinates of the constrained
+        ///         dofs.
+        /// Item3 : A double array containing the values of the constrained dofs (1-1 correspondence with the dofs in Item2).
+        /// </summary>
+        private List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC;
+        
+        /// <summary>
+        /// List containing the NEUMANN boundary conditions for the Convection Diffusion problem.
+        /// Item1 : Boundary condition case with respect to the face of the domain (RightPointFlux, TopDistributedFlux etc)
+        /// Item2 : An StructuralDof array containing the information about the direction of the dofs where the force is
+        ///         applied.
+        /// Item3 : A jagged array of arrays that contain all the coordinate sets of the bounded dofs. The lenght of
+        ///         array is equal to the number of constrained dofs. Each array contains the coordinates of the constrained
+        ///         dofs
+        /// Item3 : A double array containing the values of the constrained dofs (1-1 correspondence with the dofs in Item2)
+        /// </summary>
+        private List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC;
+        
         private double initialCondition;
         
         public Dictionary<int, double[]> div_vs { get; set; }
+        
         private int nodeIdToMonitor; //TODO put it where it belongs (coupled7and9eqsSolution.cs)
+        
         private ConvectionDiffusionDof dofTypeToMonitor;
-        private List<(int, int, double[][], double[])> eq78BCsList;
-        private List<(int, int, double[][], double[])> eq78InitialConditionsList;
 
         private ComsolMeshReader modelReader;
 
-
-
         public Eq78ModelProviderForStaggeredSolutionex7ref(ComsolMeshReader modelReader,
             double k_th_tumor, double k_th_host, double Lp, double Sv, double pv, double LplSvl_tumor, double LplSvl_host,
-            double pl, Dictionary<int, double[]> div_vs, double boundaryValueAllBoundaries, double initialCondition,
-            int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor, double modelMinX, double modelMaxX,
-            double modelMinY, double modelMaxY, double modelMinZ, double modelMaxZ,
-            List<(int, int, double[][], double[])> eq78BCsList, List<(int, int, double[][], double[])> eq78InitialConditionsList)
+            double pl, Dictionary<int, double[]> div_vs,
+            int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
+            List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
+            List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC )
         {
             this.Sv = Sv;
             this.k_th_tumor = k_th_tumor;
@@ -75,23 +87,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             this.modelReader = modelReader;
             IsoparametricJacobian3D.DeterminantTolerance = 1e-30;
-
-            this.boundaryValue = boundaryValueAllBoundaries;
+            
+            this.convectionDiffusionDirichletBC = convectionDiffusionDirichletBC;
+            this.convectionDiffusionNeumannBC = convectionDiffusionNeumannBC;
+            
             this.initialCondition = initialCondition;
-
-            this.modelMinX = modelMinX;
-            this.modelMaxX = modelMaxX;
-            this.modelMinY = modelMinY;
-            this.modelMaxY = modelMaxY;
-            this.modelMinZ = modelMinZ;
-            this.modelMaxZ = modelMaxZ;
 
             //log
             this.nodeIdToMonitor = nodeIdToMonitor;
             this.dofTypeToMonitor = dofTypeToMonitor;
-
-            this.eq78BCsList = eq78BCsList;
-            this.eq78InitialConditionsList = eq78InitialConditionsList;
+            
         }
 
         public Model GetModel()
@@ -173,9 +178,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                             AddAllBoundaryNodesBC(model);
                             break;
                         }
-
-
-
                 }
             }
             

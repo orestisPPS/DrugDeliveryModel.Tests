@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using MGroup.Constitutive.ConvectionDiffusion;
+using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 using MGroup.Constitutive.Structural;
 using MGroup.Constitutive.Structural.BoundaryConditions;
 using MGroup.MSolve.Discretization.Entities;
@@ -11,23 +13,28 @@ public class BoundaryConditionsUtility
 	public enum BoundaryConditionCase
 	{
 		LeftDirichlet,
-		LeftPointForce,
+		LeftPointFlux,
 		LeftDistributedForce,
+		
 		RightDirichlet,
-		RightPointForce,
-		RightDistributedForce,
+		RightPointFlux,
+		RightDistributedFlux,
+		
 		FrontDirichlet,
-		FrontPointForce,
-		FrontDistributedForce,
+		FrontPointFlux,
+		FrontDistributedFlux,
+		
 		BackDirichlet,
-		BackPointForce,
-		BackDistributedForce,
+		BackPointFlux,
+		BackDistributedFlux,
+		
 		BottomDirichlet,
-		BottomPointForce,
-		BottomDistributedForce,
+		BottomPointFlux,
+		BottomDistributedFlux,
+		
 		TopDirichlet,
-		TopPointForce,
-		TopDistributedForce
+		TopPointFlux,
+		TopDistributedFlux
 	}
 
 	public static void AssignStructuralDirichletBCs(Model model,
@@ -79,9 +86,9 @@ public class BoundaryConditionsUtility
 						"BoundaryConditionCase should be LeftDirichlet, RightDirichlet, FrontDirichlet, BackDirichlet, TopDirichlet or BottomDirichlet");
 				}
 			}
-
-			model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
 		}
+		
+		model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(constraints, emptyloads));
 	}
 
 	public static void AssignStructuralNeumannBCs(Model model, List<(BoundaryConditionCase, StructuralDof[], double[][], double[])> bcs,
@@ -102,8 +109,8 @@ public class BoundaryConditionsUtility
                 var loadCoords = bcSet.Item3;
                 var bcValues = bcSet.Item4;
 
-                if (loadCase == BoundaryConditionCase.RightPointForce ||
-                    loadCase == BoundaryConditionCase.LeftPointForce)
+                if (loadCase == BoundaryConditionCase.RightPointFlux ||
+                    loadCase == BoundaryConditionCase.LeftPointFlux)
                 {
                     for (int i = 0; i <= loadCoords.Length - 1; i++)
                     {
@@ -114,8 +121,8 @@ public class BoundaryConditionsUtility
                     }
                 }
 
-                else if (loadCase == BoundaryConditionCase.FrontPointForce ||
-                         loadCase == BoundaryConditionCase.BackPointForce)
+                else if (loadCase == BoundaryConditionCase.FrontPointFlux ||
+                         loadCase == BoundaryConditionCase.BackPointFlux)
                 {
                     for (int i = 0; i <= loadCoords.Length - 1; i++)
                     {
@@ -126,8 +133,8 @@ public class BoundaryConditionsUtility
                     }
                 }
                 
-                else if (loadCase == BoundaryConditionCase.TopPointForce ||
-                         loadCase == BoundaryConditionCase.BottomPointForce)
+                else if (loadCase == BoundaryConditionCase.TopPointFlux ||
+                         loadCase == BoundaryConditionCase.BottomPointFlux)
                 {
                     for (int i = 0; i <= loadCoords.Length - 1; i++)
                     {
@@ -138,7 +145,7 @@ public class BoundaryConditionsUtility
                     }
                 }
                 
-                else if (loadCase == BoundaryConditionCase.RightDistributedForce ||
+                else if (loadCase == BoundaryConditionCase.RightDistributedFlux ||
                          loadCase == BoundaryConditionCase.LeftDistributedForce)
                 {
                     if (nodalCoords[0] > loadCoords[0][0] - tolerance)
@@ -147,8 +154,8 @@ public class BoundaryConditionsUtility
                     }
                 }
                 
-                else if (loadCase == BoundaryConditionCase.FrontDistributedForce ||
-                         loadCase == BoundaryConditionCase.BackDistributedForce)
+                else if (loadCase == BoundaryConditionCase.FrontDistributedFlux ||
+                         loadCase == BoundaryConditionCase.BackDistributedFlux)
                 {
                     if (nodalCoords[1] > loadCoords[0][1] - tolerance)
                     {
@@ -156,8 +163,8 @@ public class BoundaryConditionsUtility
                     }
                 }
                 
-                else if (loadCase == BoundaryConditionCase.TopDistributedForce ||
-                         loadCase == BoundaryConditionCase.BottomDistributedForce)
+                else if (loadCase == BoundaryConditionCase.TopDistributedFlux ||
+                         loadCase == BoundaryConditionCase.BottomDistributedFlux)
                 {
                     if (nodalCoords[2] > loadCoords[0][2] - tolerance)
                     {
@@ -170,11 +177,9 @@ public class BoundaryConditionsUtility
                     throw new Exception 
 	                    ("For Neumann Boundary Conditions, the face must be: Left, Right, Front, Back, Bottom, Top");
                 }
-
-                ;
             }
-            model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
         }
+        model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
     }
     
     public static void ApplyStructuralNeumannBCToNode(List<INodalLoadBoundaryCondition> constraints,
@@ -193,5 +198,65 @@ public class BoundaryConditionsUtility
 		{
 			constraints.Add(new NodalDisplacement(node, dofs[i], values[i]));
 		}
+	}
+	
+	
+	
+	public static void AssignConvectionDiffusionDirichletBCs(Model model,
+	List<(BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> bcs,
+	double tolerance)
+	{
+		var constraints = new List<INodalConvectionDiffusionDirichletBoundaryCondition>();
+		var emptyloads = new List<INodalConvectionDiffusionNeumannBoundaryCondition>();
+		
+		foreach (var node in model.NodesDictionary)
+		{
+			var nodalCoords = new double[] { node.Value.X, node.Value.Y, node.Value.Z };
+
+			foreach (var bcSet in bcs)
+			{
+				var bcFace = bcSet.Item1;
+				var bcDofs = bcSet.Item2;
+				var faceCoords = bcSet.Item3;
+				var bcValues = bcSet.Item4;
+
+				if (bcFace == BoundaryConditionCase.RightDirichlet || bcFace == BoundaryConditionCase.LeftDirichlet)
+				{
+					if (nodalCoords[0] > faceCoords[0][0] - tolerance)
+					{
+						ApplyConvectionDiffusionDirichletBCToNode(constraints, node.Value, bcDofs, bcValues);
+					}
+				}
+				else if (bcFace == BoundaryConditionCase.FrontDirichlet ||
+				         bcFace == BoundaryConditionCase.BackDirichlet)
+				{
+					if (nodalCoords[1] > faceCoords[0][1] - tolerance)
+					{
+						ApplyConvectionDiffusionDirichletBCToNode(constraints, node.Value, bcDofs, bcValues);
+					}
+				}
+				else if (bcFace == BoundaryConditionCase.TopDirichlet ||
+				         bcFace == BoundaryConditionCase.BottomDirichlet)
+				{
+					if (nodalCoords[2] > faceCoords[0][2] - tolerance)
+					{
+						ApplyConvectionDiffusionDirichletBCToNode(constraints, node.Value, bcDofs, bcValues);
+					}
+				}
+				else
+				{
+					throw new Exception(
+						"BoundaryConditionCase should be LeftDirichlet, RightDirichlet, FrontDirichlet, BackDirichlet, TopDirichlet or BottomDirichlet");
+				}
+			}
+		}
+		
+		model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(constraints, emptyloads));
+	}
+	
+	public static void ApplyConvectionDiffusionDirichletBCToNode(List<INodalConvectionDiffusionDirichletBoundaryCondition> constraints,
+		INode node, ConvectionDiffusionDof[] dofs, double[] values)
+	{
+		constraints.Add(new NodalUnknownVariable(node, dofs[0], values[0]));
 	}
 }

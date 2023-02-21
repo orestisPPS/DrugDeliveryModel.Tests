@@ -25,7 +25,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 	public class Coupled7and9eqsModelex7ref
     {
         public Eq78ModelProviderForStaggeredSolutionex7ref Eq78ModelProvider { get; set; }
-        public Eq9ModelProviderForStaggeredSolutionex7ref Eq9ModelProvider { get; set; }
+        public Eq9ModelProviderForStaggeredSolutionEx7Ref Eq9ModelProvider { get; set; }
 
         public Model[] model;
 
@@ -59,7 +59,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private int incrementsPerStep;
 
         public Coupled7and9eqsModelex7ref(Eq78ModelProviderForStaggeredSolutionex7ref eq78ModelProvider,
-                                     Eq9ModelProviderForStaggeredSolutionex7ref eq9ModelProvider, ComsolMeshReader comsolReader,
+                                     Eq9ModelProviderForStaggeredSolutionEx7Ref eq9ModelProvider, ComsolMeshReader comsolReader,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             Dictionary<int, double[]> div_vs, double timeStep, double totalTime, int incrementsPerStep)
         {
