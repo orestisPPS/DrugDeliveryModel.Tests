@@ -49,10 +49,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static Dictionary<double, double[]> Solution = new Dictionary<double, double[]>();
         private static List<(INode node, IDofType dof)> watchDofs = new List<(INode node, IDofType dof)>();
 
-        // Data 1:RegionType, 2:Bcstype, 3: Region CaracteristicCoords Id, 4: Bc value
-        static List<(int, StructuralDof[], double[][], double[])> eq9BCsList = new List<(int, StructuralDof[], double[][], double[])>()
-        {(4, new StructuralDof[3], new double[3][], new double[3])};
-
         #endregion
 
         //Array of doublle arrys that contain various node coordintates (in the same face)
@@ -60,12 +56,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         
         #region Structural model BCs and Loads
         
-        // Data 1:RegionType, 2:LoadedDofs, 3: Region CaracteristicCoords Id, 4: values of loaded dofs values
-        //int : Flux, Distributed, Bounded
-        // static List<(int, StructuralDof[], double[][], double[])> eq9LoadsList = new List<(int, StructuralDof[], double[][], double[])>()
-        // {(1, new StructuralDof[3], new double[3][], new double[3])};
-
-
         private static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC = 
             new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
                 {
@@ -89,12 +79,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double[][] loadCoords = new double[4][] { coordsLoad1, coordsLoad2, coordsLoad3, coordsLoad4 };
         static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC =
             new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
-        {
-            (BoundaryConditionsUtility.BoundaryConditionCase.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 * 1000d / 4d})
-        };
+            {
+                (BoundaryConditionsUtility.BoundaryConditionCase.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 / 4d})
+            };
         
-
-
         #endregion
 
         #region ToDo Orestis log task 1 
@@ -408,7 +396,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //eq9model.load_value;
 
             //pressure_{ pr}_F_{Fval}_e{Fval_e}_LOGGEDval_ PAth name do not erase this exampleNo_{exNo}_caseNo_{caseNo}_
-            var writer = new MGroup.LinearAlgebra.Output.Array1DWriter();
+            /*var writer = new MGroup.LinearAlgebra.Output.Array1DWriter();
             var patSelection = 0;
             var outputPath = patSelection == 0 ? "../../../StaggeredSolutionPresDynamex7ref/results1/" : $@"C:\Users\acivi\Documents\atuxaia\develop yperelastic withh BIO TEAM\VALIDATION EQs1\staggered_ex5\";
             writer.WriteToFile(structuralResultsX, outputPath + $@"u_{1}_.txt");
@@ -424,7 +412,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             writer.WriteToFile(p_i, outputPath + $@"p_i.txt");
             writer.WriteToFile(gp_dP_dx_OverTime, outputPath + $@"gp_dP_dx_OverTime.txt");
             writer.WriteToFile(gp_dP_dy_OverTime, outputPath + $@"gp_dP_dy_OverTime.txt");
-            writer.WriteToFile(gp_dP_dz_Overtime, outputPath + $@"gp_dP_dz_Overtime.txt");
+            writer.WriteToFile(gp_dP_dz_Overtime, outputPath + $@"gp_dP_dz_Overtime.txt");*/
 
 
             //var path = outputPath+"dp_dxi_mslv.csv";
