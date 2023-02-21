@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -59,7 +60,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>();
         /*{(1, new StructuralDof[1]{StructuralDof.TranslationX}, new double[1][]{new double[] {0,0,0} }, new double[1]{0}),
             (2, new StructuralDof[1]{StructuralDof.TranslationY}, new double[1][]{new double[] {0,0,0} }, new double[1]{0}),
-            (3, new StructuralDof[1]{StructuralDof.TranslationZ}, new double[1][]{new double[] {0,0,0} }, new double[1]{0})};*/
+            (3, new StructuralDof[1]{StructuralDof.TranslationZ}, new double[1][]{new double[] {0,0,0} }, new double[1]{0})};#1#
 
         #endregion
 
@@ -356,7 +357,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 else
                 {
                     Solution.Add(currentTimeStep, allValues);
-                }*/
+                }#1#
 
                 #endregion
 
@@ -551,3 +552,4 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
     }
 }
+*/

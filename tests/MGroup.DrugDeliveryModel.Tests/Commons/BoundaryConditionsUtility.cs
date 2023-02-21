@@ -182,7 +182,7 @@ public class BoundaryConditionsUtility
         model.BoundaryConditions.Add(new StructuralBoundaryConditionSet(emptyConstraints, loads));
     }
     
-    public static void ApplyStructuralNeumannBCToNode(List<INodalLoadBoundaryCondition> constraints,
+	private static void ApplyStructuralNeumannBCToNode(List<INodalLoadBoundaryCondition> constraints,
 	    INode node, StructuralDof[] dofs, double[] values)
     {
 	    for (int i = 0; i < dofs.Length; i++)
@@ -191,7 +191,7 @@ public class BoundaryConditionsUtility
 	    }
     }
 
-	public static void ApplyStructuralDirichletBCToNode(List<INodalDisplacementBoundaryCondition> constraints,
+    private static void ApplyStructuralDirichletBCToNode(List<INodalDisplacementBoundaryCondition> constraints,
 		INode node, StructuralDof[] dofs, double[] values)
 	{
 		for (int i = 0; i < dofs.Length; i++)
@@ -254,7 +254,7 @@ public class BoundaryConditionsUtility
 		model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(constraints, emptyloads));
 	}
 	
-	public static void ApplyConvectionDiffusionDirichletBCToNode(List<INodalConvectionDiffusionDirichletBoundaryCondition> constraints,
+	private static void ApplyConvectionDiffusionDirichletBCToNode(List<INodalConvectionDiffusionDirichletBoundaryCondition> constraints,
 		INode node, ConvectionDiffusionDof[] dofs, double[] values)
 	{
 		constraints.Add(new NodalUnknownVariable(node, dofs[0], values[0]));
