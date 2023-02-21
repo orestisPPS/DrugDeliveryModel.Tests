@@ -142,7 +142,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void AddBoundaryConditions(Model model)
         {
-            BoundaryConditionsUtility.AssignConvectionDiffusionDirichletBCs(model, convectionDiffusionDirichletBC, 1e-3);
+            BoundaryConditionsUtility.AssignConvectionDiffusionDirichletBCsToModel(model, convectionDiffusionDirichletBC, 1e-3);
         }
 
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog

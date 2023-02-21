@@ -90,7 +90,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC =
             new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
         {
-            (BoundaryConditionsUtility.BoundaryConditionCase.RightPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 * 1000d / 4d})
+            (BoundaryConditionsUtility.BoundaryConditionCase.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 * 1000d / 4d})
         };
         
 
@@ -157,6 +157,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             new List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
             {
                 (BoundaryConditionsUtility.BoundaryConditionCase.BottomDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0.1}}, boundaryValue),
                 (BoundaryConditionsUtility.BoundaryConditionCase.LeftDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
                 (BoundaryConditionsUtility.BoundaryConditionCase.RightDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
                 (BoundaryConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
