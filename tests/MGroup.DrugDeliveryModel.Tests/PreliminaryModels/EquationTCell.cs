@@ -55,7 +55,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The coordinates of the monitored node
         /// </summary>
-        private double[] monitorNodeCoords = { 0.05, 0.05, 0.05 };
+        //private double[] monitorNodeCoords = { 0.05, 0.05, 0.05 };
+        private double[] monitorNodeCoords = { 0.0, 0.0, 0.0 };
         
 
         //---------------------------------------Time Discretization Specs------------------------------
@@ -69,7 +70,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// Simplified version of the production term without non-linear term
         /// </summary>
-        private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
+        //private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
+        private readonly Func<double> dependantSourceCoefficient =() => 0d;
 
 
         public EquationTCell()
@@ -108,19 +110,24 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 dependentProductionCoefficients, independentProductionCoefficients, capacity);
 
             //Assign Boundary Conditions
-            AddTopRightBackNodesBC(model, 0d, 0, 0.1, 0, 0.1, 0, 0.1);
-            AddInitialConditions(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
+            //AddTopRightBackNodesBC(model, 0d, 0, 0.1, 0, 0.1, 0, 0.1);
+            //AddInitialConditions(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
             
+            AddTopRightBackNodesBC(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
+            AddInitialConditions(model, 50d, 0, 0.1, 0, 0.1, 0, 0.1);
             
-            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = true };
+            //AddTopRightBackNodesBC(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
+            //AddInitialConditions(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
+            
+            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
             var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
-            //var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime); 
-            var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime); 
+            //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
             var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
 
             // Create a log for the desired dof
@@ -184,27 +191,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                                                   double modelMinY,double modelMaxY,
                                                   double modelMinZ,double modelMaxZ)
         {
-            var topNodes = new List<INode>();
-            var rightNodes = new List<INode>();
-            var backNodes = new List<INode>();
             var innerBulkNodes = new List<INode>();
             var tol = 1E-5;
-            
+            var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
             foreach (var node in model.NodesDictionary.Values)
             {
-                if  (Math.Abs(modelMaxZ - node.Z) < tol) topNodes.Add(node);
-                if (Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
-                if (Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
-                if (topNodes.Contains(node) == false && rightNodes.Contains(node) == false && backNodes.Contains(node) == false)
-                {
-                    innerBulkNodes.Add(node);
-                } 
-            }
-
-            var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
-            foreach (var node in innerBulkNodes)
-            {
-                initialConditions.Add(new NodalInitialUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, initialCondition));
+                if  ((Math.Abs(modelMaxZ - node.Z) >= tol) && (Math.Abs(modelMaxX - node.X) >= tol) && (Math.Abs(modelMaxY - node.Y) >= tol))
+                    initialConditions.Add(new NodalInitialUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, initialCondition));
             }
             model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
         }

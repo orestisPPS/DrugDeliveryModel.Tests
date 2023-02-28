@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using MGroup.MSolve.Discretization.Entities;
 using MGroup.MSolve.Discretization.Dofs;
 using MGroup.MSolve.Numerics.Interpolation.Jacobians;
@@ -15,83 +16,146 @@ using MGroup.NumericalAnalyzers;
 using MGroup.Solvers.Direct;
 using Xunit;
 using MGroup.Constitutive.ConvectionDiffusion;
+using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
+using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
-    public class EquationsTests13DistributedModelBuilder
+    public class EquationsTests13DistributedModelBuilderCox
     {
-        const double Dox = 1.79e-9;// m2/(sec)
-        const double vf = 1e-9;// m/(sec)
-        const double Aox = 2.55e-2;// (mol)/(m3sec)
-        const double kox = 4.64e-3;// mol/(m3)
-        const double T = 500;//  adiastato cells einai dld1
-        const double Per = 3.55e-4;// m/sec
-        const double Sv = 7e3;// 1/(m)
-        const double Ciox = 0.2; // mol/(m3)
+        //---------------------------------------Equation Cox---------------------------------------
 
-        //time interval
-        const double totalTime = 10 * 86400;// sec
-        const double timeStep = 1 * 86400;// sec
+        //---------------------------------------Variables------------------------------------------
+        /// <summary>
+        /// The average value of the three components of the fluid velocity vector  [m/s]
+        /// </summary>
+        private const double FluidSpeed = 2.32E-4; // [m/s]
 
-        const int nodeIdToMonitor = 36;
-        static ConvectionDiffusionDof dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
+        /// <summary>
+        /// Diffusivity of oxygen [m2/s]
+        /// </summary>
+        private const double Dox = 1.79E-5; // [m2/s]
 
-        public EquationsTests13DistributedModelBuilder()
+        /// <summary>
+        /// Oxygen uptake [mol/(m3*s)]
+        /// </summary>
+        private const double Aox = 2.55E-2; // [mol/(m3*s)]
+
+        /// <summary>
+        /// Oxygen uptake [mol/m3]
+        /// </summary>
+        private const double Kox = 4.64E-3; // [mol / m3]
+
+        /// <summary>
+        /// Oxygen permeability across tumor vessel walls [m/s]
+        /// </summary>
+        private const double PerOx = 3.55E-4; // [m/s]
+
+        /// <summary>
+        /// Vascular Density [1/m]
+        /// </summary>
+        private const double Sv = 7E3; // [1/m]
+
+        /// <summary>
+        /// Initial Oxygen Concentration [mol/m3]
+        /// </summary>
+        private const double CInitOx = 0.2; // [mol/m3]
+
+        /// <summary>
+        /// Cancer cell density [1]
+        /// </summary>
+        private const double T = 500d; // [cells]
+
+        //---------------------------------------Logging----------------------------------
+        /// <summary>
+        /// The degree of freedom that will be monitored for equation cox
+        /// </summary>
+        private ConvectionDiffusionDof coxMonitorDOF = ConvectionDiffusionDof.UnknownVariable;
+
+        /// <summary>
+        /// The coordinates of the monitored node
+        /// </summary>
+        private double[] monitorNodeCoords = { 0.05, 0.05, 0.05 };
+
+
+        //---------------------------------------Time Discretization Specs------------------------------
+        private const double TotalTime = 1E-2;
+
+        /// <summary>
+        /// For increased accuracy use time-step of order 1E-5
+        /// </summary>
+        private const double TimeStep = 1E-5;// sec
+
+        /// <summary>
+        /// Simplified version of the production term without non-linear term
+        /// </summary>
+        private readonly Func<double> simpleDependentLinearSource =() => -PerOx * Sv;
+
+        private readonly Func<double> independentLinearSource =() => PerOx * Sv * CInitOx;
+
+        public void EquationsTests13DistributedModelBuilder()
         {
             IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
         }
 
+        //Non - Linear Change here for linear problem
         public static double ProductionFuncWithoutConstantTerm(double Cox)
         {
-            double productionValue =-Per*Sv*Cox -Aox * T * Cox / (Cox + kox);
-            return productionValue;
+            return -PerOx * Sv * Cox - Aox * T * Cox / (Cox + Kox);
         }
 
+        //Non - Linear Derivative
         public static double ProductionFuncWithoutConstantTermDDerivative(double Cox)
         {
-            double productionDeriv = -Per * Sv  - Aox * T  / (Cox + kox) + Aox * T *Cox * Math.Pow(Cox + kox,-2);
-            return productionDeriv;
+            return -PerOx * Sv - Aox * T / (Cox + Kox) + Aox * T * Cox * Math.Pow(Cox + Kox, -2);
         }
 
+        //public static double ProductionFuncWithoutConstantTerm(double Cox)
+        //{
+        //    return -PerOx * Sv*Cox;
+        //}
 
+        ////Non - Linear Derivative
+        //public static double ProductionFuncWithoutConstantTermDDerivative(double Cox)
+        //{
+        //    return -PerOx * Sv;
+        //}
 
 
         [Theory]
-        [InlineData("../../../DataFiles/workingTetMesh155.mphtxt", Dox, vf, Aox, kox, T, Per, Sv)]
-        public void SolveEquation13(string fileName, double Dox, double vf, double Aox, double kox, double T, double Per, double Sv)
+        [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
+        public void SolveEquationCOxLinearProduction(string fileName)
         {
-            double capacity = 1;
-            double dependentProductionCoeff = 0;
-            double independentSource = Per * Sv * Ciox;
+            return;
+            var capacity = 1;
+            var diffusionCoefficient = Dox;
+            var convectionCoefficient = FluidSpeed;
+            var dependentProductionCoefficient = simpleDependentLinearSource();
+            var independentSourceCoefficient = independentLinearSource();
 
+            //Read Mesh From comsol file
+            var mesh = new ComsolMeshReader(fileName);
 
-            double convectionCoeff = vf;
-            double diffusion = Dox;
+            //Assign equation properties to the domain elements
+            var convectionDomainCoefficients = new Dictionary<int, double[]>();
+            var dependentProductionCoefficients = new Dictionary<int, double>();
+            var independentProductionCoefficients = new Dictionary<int, double>();
 
-            //get element connectivities from file
-            var modelReader = new ComsolMeshReader(fileName);
-
-            //  initiallize dictionaries of coefficients
-            Dictionary<int, double[]> ConvectionCoeffs = new Dictionary<int, double[]>();//=> new[]  {1d, 1d, 1d};                                                                                                //public double DiffusionCoeff;
-            Dictionary<int, double> DependentProductionCoeffs = new Dictionary<int, double>();
-            Dictionary<int, double> IndependentProductionCoeffs = new Dictionary<int, double>();
-            foreach (var elementConnectivity in modelReader.ElementConnectivity)
+            foreach (var elementConnectivity in mesh.ElementConnectivity)
             {
-                ConvectionCoeffs[elementConnectivity.Key] = new double[] { convectionCoeff, convectionCoeff, convectionCoeff };
-                DependentProductionCoeffs[elementConnectivity.Key] = dependentProductionCoeff;
-                IndependentProductionCoeffs[elementConnectivity.Key] = independentSource;
+                convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
+                dependentProductionCoefficients[elementConnectivity.Key] = dependentProductionCoefficient;
+                independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
             }
 
-            //initialize mpdel provider solution
-            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(modelReader);
+            //Create Model
+            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
+            var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
+                dependentProductionCoefficients, independentProductionCoefficients, capacity);
 
-            var model = modelProvider.CreateModelFromComsolFile(ConvectionCoeffs, diffusion,
-                DependentProductionCoeffs, IndependentProductionCoeffs, capacity,
-                ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative);
-
-
-            modelProvider.AddTopAndBottomBCs(model, 0.1, Ciox, 0, Ciox); // pithanws na xrhsimopoiisoume san BC to Ciox
-            modelProvider.AddInitialConditionsForTheRestOfBulkNodesMInusTopAndBottom(model, 0.1, 0, Ciox); // edw tha xrisimopoiitei sigoura to initial cox dld to Ciox san initial condition.
+            //Assign Boundary Conditions
+            AddTopRightBackNodesBC(model, 0d, 0.1, 0, 0.1, 0, 0.1, CInitOx);
+            //AddInitialConditions(model, 0d, 0.1, 0, 0.1, 0, 0.1, CInitOx);
 
 
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
@@ -101,14 +165,15 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
-            //var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem,
-            //    linearAnalyzer, timeStep: timeStep, totalTime: totalTime); 
-            var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: timeStep, totalTime: totalTime, bdfOrder: 5);
+            // var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime);
+            var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
             var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
 
+            // Create a log for the desired dof
+            var nodeIdToMonitor =Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-3);
             var watchDofs = new List<(INode node, IDofType dof)>()
             {
-                (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
+                (model.NodesDictionary[nodeIdToMonitor], coxMonitorDOF),
             };
 
             linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
@@ -116,19 +181,168 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
             dynamicAnalyzer.Initialize();
+            Console.WriteLine("Solving Cox Linear prod");
             dynamicAnalyzer.Solve();
 
-            int totalNewmarkstepsNum = (int)Math.Truncate(totalTime / timeStep);
-            var unknownVariableOverTime = new double[totalNewmarkstepsNum];
+            int totalNewmarkstepsNum = (int)Math.Truncate(TotalTime / TimeStep);
+            var cox = new double[totalNewmarkstepsNum];
             for (int i1 = 0; i1 < totalNewmarkstepsNum; i1++)
             {
                 var timeStepResultsLog = dynamicAnalyzer.ResultStorage.Logs[i1];
-                unknownVariableOverTime[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), dofTypeToMonitor];
+                cox[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), coxMonitorDOF];
             }
+
+            CSVExporter.ExportVectorToCSV(cox, "../../../Integration/cox_linear_nodes_mslv.csv");
+            Console.WriteLine("FINISHED solving Cox Linear prod");
+        }
+
+        [Theory]
+        [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
+        public void SolveEquationCOxNonLinearProduction(string fileName)
+        {
+            var capacity = 1;
+            var diffusionCoefficient = Dox;
+            var convectionCoefficient = FluidSpeed;
+            var independentSourceCoefficient = independentLinearSource();
+            var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
+
+            //Read Mesh From comsol file
+            var mesh = new ComsolMeshReader(fileName);
+
+            //Assign equation properties to the domain elements
+            var convectionDomainCoefficients = new Dictionary<int, double[]>();
+            var dependentProductionCoefficients = new Dictionary<int, double>();
+            var independentProductionCoefficients = new Dictionary<int, double>();
+
+            foreach (var elementConnectivity in mesh.ElementConnectivity)
+            {
+                convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
+                dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
+                independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
+            }
+
+            //Create Model
+            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
+            var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
+                dependentProductionCoefficients, independentProductionCoefficients, capacity,
+                ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative);
+            //var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
+            //    dependentProductionCoefficients, independentProductionCoefficients, capacity);
+
+            //Assign Boundary Conditions
+            AddTopRightBackNodesBC(model, 0d, 0.1, 0, 0.1, 0, 0.1, CInitOx);
+            //AddInitialConditions(model, 0d, 0.1, 0, 0.1, 0, 0.1, 0d);
+
+
+            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
+            var algebraicModel = solverFactory.BuildAlgebraicModel(model);
+            var solver = solverFactory.BuildSolver(algebraicModel);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
+
+            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, problem, numIncrements: 2)
+            {
+                ResidualTolerance = 1E-3,
+                MaxIterationsPerIncrement = 100,
+                NumIterationsForMatrixRebuild = 1
+            };
+
+            var linearAnalyzer = loadControlAnalyzerBuilder.Build();//new LinearAnalyzer(algebraicModel, solver, problem);
+
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime);
+            //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
+            var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
+
+            // Create a log for the desired dof
+            var nodeIdToMonitor =Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-2);
+            var watchDofs = new List<(INode node, IDofType dof)>()
+            {
+                (model.NodesDictionary[nodeIdToMonitor], coxMonitorDOF),
+            };
+
+            linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
+
+
+            dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
+            dynamicAnalyzer.Initialize();
+            Console.WriteLine("Solving Cox Non-Linear prod");
+            dynamicAnalyzer.Solve();
+
+            int totalNewmarkstepsNum = (int)Math.Truncate(TotalTime / TimeStep);
+            var cox = new double[totalNewmarkstepsNum];
+            for (int i1 = 0; i1 < totalNewmarkstepsNum; i1++)
+            {
+                var timeStepResultsLog = dynamicAnalyzer.ResultStorage.Logs[i1];
+                cox[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), coxMonitorDOF];
+            }
+
+            CSVExporter.ExportVectorToCSV(cox, "../../../Integration/cox_non_linear_nodes_mslv.csv");
+            Console.WriteLine("FINISHED solving Cox Non-Linear prod");
 
         }
 
 
+        private void AddTopRightBackNodesBC(Model model,double modelMinX,double modelMaxX,
+                                                        double modelMinY,double modelMaxY,
+                                                        double modelMinZ,double modelMaxZ, double boundaryCondition)
+        {
+            var topNodes = new List<INode>();
+            var rightNodes = new List<INode>();
+            var backNodes = new List<INode>();
+
+            var tol = 1E-5;
+
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if  (Math.Abs(modelMaxZ - node.Z) < tol) topNodes.Add(node);
+                if (Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
+                if (Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
+            }
+            //Union of all boundary nodes in a single enumerable.
+            var peripheralNodes = topNodes.Union(backNodes).Union(rightNodes);
+
+            var dirichletBCs = new List<NodalUnknownVariable>();
+
+            //Add the prescribed value to all boundary nodes
+            foreach (var node in peripheralNodes)
+            {
+                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, boundaryCondition));
+            }
+
+            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(dirichletBCs, new INodalConvectionDiffusionNeumannBoundaryCondition[] {}));
+        }
+
+        private void AddInitialConditions(Model model, double initialCondition,
+                                                  double modelMinX,double modelMaxX,
+                                                  double modelMinY,double modelMaxY,
+                                                  double modelMinZ,double modelMaxZ)
+        {
+            var topNodes = new List<INode>();
+            var bottomNodes = new List<INode>();
+            var leftNodes = new List<INode>();
+            var rightNodes = new List<INode>();
+            var frontNodes = new List<INode>();
+            var backNodes = new List<INode>();
+            var innerBulkNodes = new List<INode>();
+            var tol = 1E-5;
+
+            foreach (var node in model.NodesDictionary.Values)
+            {
+                if (Math.Abs(modelMaxZ - node.Z) < tol) topNodes.Add(node);
+                if (Math.Abs(modelMinZ - node.Z) < tol) bottomNodes.Add(node);
+                if (Math.Abs(modelMinX - node.X) < tol) leftNodes.Add(node);
+                if (Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
+                if (Math.Abs(modelMinY - node.Y) < tol) frontNodes.Add(node);
+                if (Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
+                innerBulkNodes.Add(node);
+            }
+
+            var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
+            foreach (var node in innerBulkNodes)
+            {
+                initialConditions.Add(new NodalInitialUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, initialCondition));
+            }
+            model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
+        }
 
 
     }
