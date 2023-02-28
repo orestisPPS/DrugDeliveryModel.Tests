@@ -15,7 +15,7 @@ public class CoupledProblemBoundaryConditionSet
                 
         }
 
-        public CoupledProblemBoundaryConditionSet(List<(BoundaryConditionsUtility.BoundaryConditionCase, IDofType[], double[][], double[])> list)
+        public CoupledProblemBoundaryConditionSet(List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, IDofType[], double[][], double[])> list)
         {
                 
         }

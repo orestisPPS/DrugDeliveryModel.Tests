@@ -44,7 +44,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         ///         dofs.
         /// Item3 : A double array containing the values of the constrained dofs (1-1 correspondence with the dofs in Item2).
         /// </summary>
-        private List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC;
+        private List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC;
         
         /// <summary>
         /// List containing the NEUMANN boundary conditions for the Convection Diffusion problem.
@@ -56,7 +56,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         ///         dofs
         /// Item3 : A double array containing the values of the constrained dofs (1-1 correspondence with the dofs in Item2)
         /// </summary>
-        private List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC;
+        private List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC;
         
         private double initialCondition;
         
@@ -72,8 +72,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             double k_th_tumor, double k_th_host, double Lp, double Sv, double pv, double LplSvl_tumor, double LplSvl_host,
             double pl, Dictionary<int, double[]> div_vs,
             int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
-            List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
-            List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC )
+            List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
+            List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC )
         {
             this.Sv = Sv;
             this.k_th_tumor = k_th_tumor;
@@ -142,7 +142,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void AddBoundaryConditions(Model model)
         {
-            BoundaryConditionsUtility.AssignConvectionDiffusionDirichletBCsToModel(model, convectionDiffusionDirichletBC, 1e-3);
+            BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionDirichletBCsToModel(model, convectionDiffusionDirichletBC, 1e-3);
         }
 
         public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog

@@ -47,7 +47,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         ///         dofs
         /// Item3 : A double array containing the values of the constrained dofs (1-1 correspondence with the dofs in Item2)
         /// </summary>
-        private List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC;
+        private List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC;
         
         /// <summary>
         /// List containing the NEUMANN boundary conditions for the structural problem
@@ -59,7 +59,7 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         ///         dofs
         /// Item3 : A double array containing the values of the constrained dofs (1-1 correspondence with the dofs in Item2)
         /// </summary>
-        private List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC;
+        private List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC;
         
         private ComsolMeshReader reader;
        
@@ -86,8 +86,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
             double timeStep, double totalTime,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             int nodeIdToMonitor, StructuralDof dofTypeToMonitor,
-            List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC,
-            List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC
+            List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC,
+            List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC
             )
         {
             //this.sc = sc;
@@ -144,8 +144,8 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
         
         public void AddBoundaryConditions(Model model)
         {
-            BoundaryConditionsUtility.AssignStructuralDirichletBCsToModel(model, structuralDirichletBC, 1e-3);
-            BoundaryConditionsUtility.AssignStructuralNeumannBCsToModel(model, structuralNeumannBC, 1E-3);
+            BoundaryAndInitialConditionsUtility.AssignStructuralDirichletBCsToModel(model, structuralDirichletBC, 1e-3);
+            BoundaryAndInitialConditionsUtility.AssignStructuralNeumannBCsToModel(model, structuralNeumannBC, 1E-3);
         }
         
         //TODO Gerasimos add if for dynamic or peudostatic analyzer

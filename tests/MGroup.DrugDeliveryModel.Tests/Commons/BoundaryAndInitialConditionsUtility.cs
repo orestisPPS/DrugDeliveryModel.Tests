@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MGroup.Constitutive.ConvectionDiffusion;
 using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
+using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
 using MGroup.Constitutive.Structural;
 using MGroup.Constitutive.Structural.BoundaryConditions;
+using MGroup.MSolve.Discretization.BoundaryConditions;
 using MGroup.MSolve.Discretization.Entities;
 
 namespace MGroup.DrugDeliveryModel.Tests.Commons;
 
-public class BoundaryConditionsUtility
+public class BoundaryAndInitialConditionsUtility
 {
 	public enum BoundaryConditionCase
 	{
@@ -35,6 +38,23 @@ public class BoundaryConditionsUtility
 		TopDirichlet,
 		TopPointFlux,
 		TopDistributedFlux
+	}
+
+	public static void AssignConvectionDiffusionICToModel(Model model, double initialValue)
+	{
+		var modelBoundaryConditions = (model.BoundaryConditions[0] as ConvectionDiffusionBoundaryConditionSet)
+									.EnumerateNodalBoundaryConditions().ToList() as List<INodalBoundaryCondition<IConvectionDiffusionDofType>>;
+		var dirichletNodes = (modelBoundaryConditions
+				.Where(x => x is INodalConvectionDiffusionDirichletBoundaryCondition).ToList())
+				.Select(x => x.Node).Distinct().ToList();
+		var freeNodes = model.NodesDictionary.Values.Except(dirichletNodes).ToList();
+		var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
+		foreach (var freeNode in freeNodes)
+		{
+			initialConditions.Add(new NodalInitialUnknownVariable(freeNode, ConvectionDiffusionDof.UnknownVariable, initialValue));
+		}
+
+		model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
 	}
 	
 	

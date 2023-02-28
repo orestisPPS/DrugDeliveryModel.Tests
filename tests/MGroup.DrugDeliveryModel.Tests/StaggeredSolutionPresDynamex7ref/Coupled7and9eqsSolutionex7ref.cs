@@ -56,18 +56,18 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         
         #region Structural model BCs and Loads
         
-        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC = 
-            new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
+        private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralDirichletBC = 
+            new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
                 {
-                    (BoundaryConditionsUtility.BoundaryConditionCase.BottomDirichlet,
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.BottomDirichlet,
                         new StructuralDof[1] { StructuralDof.TranslationZ }, new double[1][]{new double[3] {0,0,0}}, new double[] { 0.0 }),
-                    (BoundaryConditionsUtility.BoundaryConditionCase.LeftDirichlet,
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.LeftDirichlet,
                         new StructuralDof[1] { StructuralDof.TranslationX }, new double[1][]{new double[3] {0,0,0}}, new double[] { 0.0 }),
-                    (BoundaryConditionsUtility.BoundaryConditionCase.RightDirichlet,
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.RightDirichlet,
                         new StructuralDof[1] { StructuralDof.TranslationX }, new double[1][]{new double[3] {0.1,0,0}}, new double[] { 0.0 }),
-                    (BoundaryConditionsUtility.BoundaryConditionCase.FrontDirichlet,
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.FrontDirichlet,
                         new StructuralDof[1] { StructuralDof.TranslationY }, new double[1][]{new double[3] {0,0,0}}, new double[] { 0.0 }),
-                    (BoundaryConditionsUtility.BoundaryConditionCase.BackDirichlet,
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.BackDirichlet,
                         new StructuralDof[1] { StructuralDof.TranslationY }, new double[1][]{new double[3] {0,0.1,0}}, new double[] { 0.0 }),
                     
                 };
@@ -77,10 +77,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static double[] coordsLoad3 = new double[3] { 0.0, 0.1, 0.1 };
         static double[] coordsLoad4 = new double[3] { 0.1, 0.1, 0.1 };
         static double[][] loadCoords = new double[4][] { coordsLoad1, coordsLoad2, coordsLoad3, coordsLoad4 };
-        static List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC =
-            new List<(BoundaryConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
+        static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC =
+            new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
             {
-                (BoundaryConditionsUtility.BoundaryConditionCase.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 / 4d})
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 / 4d})
             };
         
         #endregion
@@ -141,20 +141,20 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         
         private static ConvectionDiffusionDof[] constrainedDofType = new ConvectionDiffusionDof[1] { ConvectionDiffusionDof.UnknownVariable };
         private static double[] boundaryValue = new double[1] { 0d };
-        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> pressureDirichletBC = 
-            new List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
+        private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> pressureDirichletBC = 
+            new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
             {
-                (BoundaryConditionsUtility.BoundaryConditionCase.BottomDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
-                (BoundaryConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0.1}}, boundaryValue),
-                (BoundaryConditionsUtility.BoundaryConditionCase.LeftDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
-                (BoundaryConditionsUtility.BoundaryConditionCase.RightDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
-                (BoundaryConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
-                (BoundaryConditionsUtility.BoundaryConditionCase.BackDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0.1,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.BottomDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0.1}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.LeftDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.RightDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.BackDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0.1,0}}, boundaryValue),
                     
             };
 
-        private static List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>
-            pressureNeumannBC = new List<(BoundaryConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double [])>();
+        private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>
+            pressureNeumannBC = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double [])>();
         
         private static double boundaryValueAllBoundaries = 0;
         #endregion
