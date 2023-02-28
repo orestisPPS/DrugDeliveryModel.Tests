@@ -39,25 +39,6 @@ public class BoundaryAndInitialConditionsUtility
 		TopPointFlux,
 		TopDistributedFlux
 	}
-
-	public static void AssignConvectionDiffusionICToModel(Model model, double initialValue)
-	{
-		var modelBoundaryConditions = (model.BoundaryConditions[0] as ConvectionDiffusionBoundaryConditionSet)
-									.EnumerateNodalBoundaryConditions().ToList() as List<INodalBoundaryCondition<IConvectionDiffusionDofType>>;
-		var dirichletNodes = (modelBoundaryConditions
-				.Where(x => x is INodalConvectionDiffusionDirichletBoundaryCondition).ToList())
-				.Select(x => x.Node).Distinct().ToList();
-		var freeNodes = model.NodesDictionary.Values.Except(dirichletNodes).ToList();
-		var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
-		foreach (var freeNode in freeNodes)
-		{
-			initialConditions.Add(new NodalInitialUnknownVariable(freeNode, ConvectionDiffusionDof.UnknownVariable, initialValue));
-		}
-
-		model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
-	}
-	
-	
 	
 	public static void AssignStructuralDirichletBCsToModel(Model model,
 		List<(BoundaryConditionCase, StructuralDof[], double[][], double[])> bcs,
@@ -234,4 +215,22 @@ public class BoundaryAndInitialConditionsUtility
 	{
 		constraints.Add(new NodalUnknownVariable(node, dofs[0], values[0]));
 	}
+	
+	public static void AssignConvectionDiffusionICToModel(Model model, double initialValue)
+	{
+		var modelBoundaryConditions = (model.BoundaryConditions[0] as ConvectionDiffusionBoundaryConditionSet)
+			.EnumerateNodalBoundaryConditions().ToList() as List<INodalBoundaryCondition<IConvectionDiffusionDofType>>;
+		var dirichletNodes = (modelBoundaryConditions
+				.Where(x => x is INodalConvectionDiffusionDirichletBoundaryCondition).ToList())
+			.Select(x => x.Node).Distinct().ToList();
+		var freeNodes = model.NodesDictionary.Values.Except(dirichletNodes).ToList();
+		var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
+		foreach (var freeNode in freeNodes)
+		{
+			initialConditions.Add(new NodalInitialUnknownVariable(freeNode, ConvectionDiffusionDof.UnknownVariable, initialValue));
+		}
+
+		model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
+	}
+
 }

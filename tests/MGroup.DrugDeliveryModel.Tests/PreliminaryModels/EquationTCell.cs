@@ -18,6 +18,8 @@ using Xunit;
 using MGroup.Constitutive.ConvectionDiffusion;
 using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
+using MGroup.MSolve.AnalysisWorkflow;
+using MGroup.MSolve.Solution;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
@@ -72,25 +74,68 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// </summary>
         //private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
         private readonly Func<double> dependantSourceCoefficient =() => 0d;
+        
+        //---------------------------------------Initial conditions------------------------------
+        private double initialTCellDensity = 500d;
+        
+        private Model model;
 
+        private ComsolMeshReader mesh;
+
+        private List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> neumannBC
+            = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>();
+
+        private static ConvectionDiffusionDof[] constrainedDofType = new ConvectionDiffusionDof[1] { ConvectionDiffusionDof.UnknownVariable };
+        private static double[] boundaryValue = new double[1] { 0d };
+        private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> dirichletBC =
+            new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
+            {
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0.1}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.RightDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+            };
 
         public EquationTCell()
         {
-            IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
+            
         }
         
         [Theory]
         [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
         public void SolveEquationTc(string fileName)
         {
+            IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
+            
+            mesh = new ComsolMeshReader(fileName);
+            
+            model = GetModel();
+            
+            BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionDirichletBCsToModel(model, dirichletBC, 1E-5);
+            BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionICToModel(model, initialTCellDensity);
+            
+            var dynamicAnalyzer = GetAppropriateSolverAnalyzerAndLog(model).Item1;
+            dynamicAnalyzer.Solve();
+
+            var totalNewmarkStepsNum = (int)Math.Truncate(TotalTime / TimeStep);
+            var tCell = new double[totalNewmarkStepsNum];
+            for (int i1 = 0; i1 < totalNewmarkStepsNum; i1++)
+            {
+                var timeStepResultsLog = dynamicAnalyzer.Logs[i1];
+                tCell[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(GetAppropriateSolverAnalyzerAndLog(model).Item2), coxMonitorDOF];
+            }
+            
+            CSVExporter.ExportVectorToCSV(tCell, "../../../Integration/Tc_nodes_mslv.csv");
+        }
+
+        
+        
+        private Model GetModel()
+        {
             var capacity = 1;
             var diffusionCoefficient = 0d;
             var convectionCoefficient = SolidSpeed;
             var dependentProductionCoefficient = dependantSourceCoefficient();
             var independentSourceCoefficient = 0d;
-
-            //Read Mesh From comsol file
-            var mesh = new ComsolMeshReader(fileName);
             
             //Assign equation properties to the domain elements
             var convectionDomainCoefficients = new Dictionary<int, double[]>();   
@@ -108,16 +153,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
             var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient, 
                 dependentProductionCoefficients, independentProductionCoefficients, capacity);
-
-            //Assign Boundary Conditions
-            //AddTopRightBackNodesBC(model, 0d, 0, 0.1, 0, 0.1, 0, 0.1);
-            //AddInitialConditions(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
             
-            AddTopRightBackNodesBC(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
-            AddInitialConditions(model, 50d, 0, 0.1, 0, 0.1, 0, 0.1);
-            
-            //AddTopRightBackNodesBC(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
-            //AddInitialConditions(model, 500d, 0, 0.1, 0, 0.1, 0, 0.1);
+            return model;
+        }
+        
+        
+        private (IParentAnalyzer, int)  GetAppropriateSolverAnalyzerAndLog(Model model)
+        {
             
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
@@ -138,68 +180,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             };
 
             linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
-
-
             dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
             dynamicAnalyzer.Initialize();
-            dynamicAnalyzer.Solve();
-
-            int totalNewmarkstepsNum = (int)Math.Truncate(TotalTime / TimeStep);
-            var cox = new double[totalNewmarkstepsNum];
-            for (int i1 = 0; i1 < totalNewmarkstepsNum; i1++)
-            {
-                var timeStepResultsLog = dynamicAnalyzer.ResultStorage.Logs[i1];
-                cox[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), coxMonitorDOF];
-            }
-            
-            CSVExporter.ExportVectorToCSV(cox, "../../../Integration/Tc_nodes_mslv.csv");
-        }
-
-        private void AddTopRightBackNodesBC(Model model, double boundaryCondition,
-                                                        double modelMinX,double modelMaxX,
-                                                        double modelMinY,double modelMaxY,
-                                                        double modelMinZ,double modelMaxZ)  
-        {
-            var topNodes = new List<INode>();
-            var rightNodes = new List<INode>();
-            var backNodes = new List<INode>();
-            
-            var tol = 1E-5;
-
-            foreach (var node in model.NodesDictionary.Values)
-            {
-                if  (Math.Abs(modelMaxZ - node.Z) < tol) topNodes.Add(node);
-                if (Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
-                if (Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
-            }
-            //Union of all boundary nodes in a single enumerable.
-            var peripheralNodes = topNodes.Union(backNodes).Union(rightNodes);
-
-            var dirichletBCs = new List<NodalUnknownVariable>();
-
-            //Add the prescribed value to all boundary nodes
-            foreach (var node in peripheralNodes)
-            {
-                dirichletBCs.Add(new NodalUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, boundaryCondition));
-            }
-
-            model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(dirichletBCs, new INodalConvectionDiffusionNeumannBoundaryCondition[] {}));
+            return (dynamicAnalyzer, nodeIdToMonitor);
         }
         
-        private void AddInitialConditions(Model model, double initialCondition,
-                                                  double modelMinX,double modelMaxX,
-                                                  double modelMinY,double modelMaxY,
-                                                  double modelMinZ,double modelMaxZ)
-        {
-            var innerBulkNodes = new List<INode>();
-            var tol = 1E-5;
-            var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
-            foreach (var node in model.NodesDictionary.Values)
-            {
-                if  ((Math.Abs(modelMaxZ - node.Z) >= tol) && (Math.Abs(modelMaxX - node.X) >= tol) && (Math.Abs(modelMaxY - node.Y) >= tol))
-                    initialConditions.Add(new NodalInitialUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, initialCondition));
-            }
-            model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
-        }
     }
 }
