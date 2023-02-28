@@ -139,8 +139,6 @@ namespace MGroup.DrugDeliveryModel.Tests.EquationModels
                 model.ElementsDictionary.Add(elementConnectivity.Key, element);
                 model.SubdomainsDictionary[0].Elements.Add(element);
             }
-            
-            
             return model;
         }
         
