@@ -62,7 +62,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public CoupledBiphasicTCellModelProvider(FluidPhaseModelProvider fluidPhaseModelProvider,
                                                  SolidPhaseModelProvider solidPhaseProvider,
-                                                    TCellModelProvider tCellModelProvider,
+                                                 TCellModelProvider tCellModelProvider,
                                                  ComsolMeshReader comsolReader,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             Dictionary<int, double[]> div_vs, double timeStep, double totalTime, int incrementsPerStep)
@@ -127,9 +127,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             SolidPhaseModelProvider.AddBoundaryConditions(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = SolidPhaseModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
             
-            model[3] = TCellModelProvider.GetModel();
-            TCellModelProvider.AddBoundaryConditions(model[3]);
-            (analyzers[3], solvers[3], nlAnalyzers[3]) = TCellModelProvider.GetAppropriateSolverAnalyzerAndLog(model[3], timeStep, totalTime, CurrentTimeStep);
+            model[2] = TCellModelProvider.GetModel();
+            TCellModelProvider.AddBoundaryConditions(model[2]);
+            (analyzers[2], solvers[2], nlAnalyzers[2]) = TCellModelProvider.GetAppropriateSolverAnalyzerAndLog(model[2], timeStep, totalTime, CurrentTimeStep);
 
             for (int i = 0; i < analyzers.Length; i++)
             {
@@ -173,15 +173,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             model[1] = SolidPhaseModelProvider.GetModel();
             SolidPhaseModelProvider.AddBoundaryConditions(model[1]);
+            (analyzers[1], solvers[1], nlAnalyzers[1]) = SolidPhaseModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
             
-            model[3] = TCellModelProvider.GetModel();
-            TCellModelProvider.AddBoundaryConditions(model[3]);
+            
+            model[2] = TCellModelProvider.GetModel();
+            TCellModelProvider.AddBoundaryConditions(model[2]);
             if (CurrentTimeStep == 0)
             {
-                TCellModelProvider.AddInitialConditions(model[3]);
+                TCellModelProvider.AddInitialConditions(model[2]);
             }
-            
-            (analyzers[1], solvers[1], nlAnalyzers[1]) = SolidPhaseModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
+            (analyzers[2], solvers[2], nlAnalyzers[2]) = TCellModelProvider.GetAppropriateSolverAnalyzerAndLog(model[2], timeStep, totalTime, CurrentTimeStep);
 
             for (int i = 0; i < analyzers.Length; i++)
             {
