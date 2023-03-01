@@ -18,6 +18,7 @@ using Xunit;
 using MGroup.Constitutive.ConvectionDiffusion;
 using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
+using MGroup.DrugDeliveryModel.Tests.PreliminaryModels;
 using MGroup.MSolve.AnalysisWorkflow;
 using MGroup.MSolve.Solution;
 
@@ -52,7 +53,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The degree of freedom that will be monitored for equation cox
         /// </summary>
-        private ConvectionDiffusionDof coxMonitorDOF = ConvectionDiffusionDof.UnknownVariable;
+        private ConvectionDiffusionDof MonitorDOFType = ConvectionDiffusionDof.UnknownVariable;
 
         /// <summary>
         /// The coordinates of the monitored node
@@ -95,6 +96,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
             };
 
+        private EquationTCellModelProvider ModelProvider;
         public EquationTCell()
         {
             
@@ -104,86 +106,34 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
         public void SolveEquationTc(string fileName)
         {
-            IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
-            
             mesh = new ComsolMeshReader(fileName);
             
-            model = GetModel();
+            var nodeIdToMonitor =Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-3);
             
-            BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionDirichletBCsToModel(model, dirichletBC, 1E-5);
-            BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionICToModel(model, initialTCellDensity);
-            
-            var dynamicAnalyzer = GetAppropriateSolverAnalyzerAndLog(model).Item1;
-            dynamicAnalyzer.Solve();
+            ModelProvider = new EquationTCellModelProvider(SolidSpeed, K1, K2, Cox, mesh, MonitorDOFType, nodeIdToMonitor, dirichletBC, neumannBC, initialTCellDensity);
 
+            var model = ModelProvider.GetModel();
+            ModelProvider.AddBoundaryConditions(model);
+            ModelProvider.AddInitialConditions(model);
+            
+
+            var dynamicAnalyzer = ModelProvider.GetAppropriateSolverAnalyzerAndLog(model, TimeStep, TotalTime, 0).Item1;
+            ((NewmarkDynamicAnalyzer)dynamicAnalyzer).ResultStorage = new ImplicitIntegrationAnalyzerLog();
+            dynamicAnalyzer.Initialize(true);
+            dynamicAnalyzer.Solve();
+            
             var totalNewmarkStepsNum = (int)Math.Truncate(TotalTime / TimeStep);
             var tCell = new double[totalNewmarkStepsNum];
             for (int i1 = 0; i1 < totalNewmarkStepsNum; i1++)
             {
                 var timeStepResultsLog = dynamicAnalyzer.Logs[i1];
-                tCell[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(GetAppropriateSolverAnalyzerAndLog(model).Item2), coxMonitorDOF];
+                tCell[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), MonitorDOFType];
             }
             
             CSVExporter.ExportVectorToCSV(tCell, "../../../Integration/Tc_nodes_mslv.csv");
         }
 
         
-        
-        private Model GetModel()
-        {
-            var capacity = 1;
-            var diffusionCoefficient = 0d;
-            var convectionCoefficient = SolidSpeed;
-            var dependentProductionCoefficient = dependantSourceCoefficient();
-            var independentSourceCoefficient = 0d;
-            
-            //Assign equation properties to the domain elements
-            var convectionDomainCoefficients = new Dictionary<int, double[]>();   
-            var dependentProductionCoefficients = new Dictionary<int, double>();
-            var independentProductionCoefficients = new Dictionary<int, double>();
-            
-            foreach (var elementConnectivity in mesh.ElementConnectivity)
-            {
-                convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
-                dependentProductionCoefficients[elementConnectivity.Key] = dependentProductionCoefficient;
-                independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
-            }
-
-            //Create Model
-            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
-            var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient, 
-                dependentProductionCoefficients, independentProductionCoefficients, capacity);
-            
-            return model;
-        }
-        
-        
-        private (IParentAnalyzer, int)  GetAppropriateSolverAnalyzerAndLog(Model model)
-        {
-            
-            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
-            var algebraicModel = solverFactory.BuildAlgebraicModel(model);
-            var solver = solverFactory.BuildSolver(algebraicModel);
-            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
-
-            var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
-
-            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime); 
-            //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
-            var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
-
-            // Create a log for the desired dof
-            var nodeIdToMonitor =Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-3);
-            var watchDofs = new List<(INode node, IDofType dof)>()
-            {
-                (model.NodesDictionary[nodeIdToMonitor], coxMonitorDOF),
-            };
-
-            linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
-            dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
-            dynamicAnalyzer.Initialize();
-            return (dynamicAnalyzer, nodeIdToMonitor);
-        }
         
     }
 }
