@@ -66,7 +66,8 @@ public class TCellModelProvider
             
         foreach (var elementConnectivity in Mesh.ElementConnectivity)
         {
-            convectionDomainCoefficients[elementConnectivity.Key] = SolidVelocityDivergence[elementConnectivity.Key];
+            var vs = SolidVelocityDivergence[elementConnectivity.Key];
+            convectionDomainCoefficients[elementConnectivity.Key] = new double [] {vs[0], vs[0], vs[0]};
             
             var elementCOx = DomainCOx[elementConnectivity.Key];
             var dependentProductionCoefficient = (K1 * elementCOx) / (K2 + elementCOx);
@@ -102,7 +103,8 @@ public class TCellModelProvider
             var solver = solverFactory.BuildSolver(algebraicModel);
             var provider = new ProblemConvectionDiffusion(model, algebraicModel);
 
-            var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, provider);
+    
+           var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, provider);
 
             var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, provider, numIncrements: 1)
             {
@@ -127,6 +129,6 @@ public class TCellModelProvider
             };
             loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel);
 
-            return (analyzer, solver, loadControlAnalyzer);
+             return (analyzer, solver, loadControlAnalyzer);
         }
 }

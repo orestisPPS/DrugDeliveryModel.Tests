@@ -194,6 +194,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         #endregion
         
         #region Cancer Cell Density (TCell) model
+
+        private const double dummySolidVelovity = 2.32E-4;
         
         /// <summary>
         /// Growth rate parameter 1[mol/(m3)]
@@ -216,13 +218,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         
             private static ConvectionDiffusionDof[] TCellDofType = new ConvectionDiffusionDof[1] { ConvectionDiffusionDof.UnknownVariable };
             private static double[] TcellBoundaryValue = new double[1] { 0d };
-            private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> tCellDirichletBC = 
+            private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> tCellDirichletBC =
                 new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
                 {
-                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopDirichlet, TCellDofType, new double[1][]{new double[3] {0,0,0.1}}, TcellBoundaryValue),
-                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.RightDirichlet, TCellDofType, new double[1][]{new double[3] {0.1,0,0}}, TcellBoundaryValue),
-                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.BackDirichlet, TCellDofType, new double[1][]{new double[3] {0,0.1,0}}, TcellBoundaryValue),
-                        
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0.1}}, TcellBoundaryValue),
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.LeftDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, TcellBoundaryValue),
+                    (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, TcellBoundaryValue),
                 };
 
             private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>
@@ -241,7 +242,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             static List<(double[], string, StructuralDof, int, double[])> nodeTCellLogs = new List<(double[], string, StructuralDof, int, double[])>()
             {(new double[]{ 0.04930793848882013,0.04994681648346263,0.075 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
             
-            static double[] tCellMonitorNodeCoords = new double[] { 0.055, 0.0559, 0.07366 };
+            //static double[] tCellMonitorNodeCoords = new double[] { 0.055, 0.0559, 0.07366 };
+            static double[] tCellMonitorNodeCoords = new double[] { 0.0, 0.0, 0.0 };
             
             private static int tCellMonitorID;
             
@@ -305,7 +307,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 var velocityDiv = new double[nGaussPoints];
                 for (int i1 = 0; i1 < nGaussPoints; i1++)
                 {
-                    velocityDiv[i1] = 0d;
+                    velocityDiv[i1] =  dummySolidVelovity;
                 }
                 dummyVelocityDivergenceAtElementGaussPoints.Add(elem.Key, velocityDiv);
             }
@@ -375,7 +377,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
              
             
             //Create Model For TCell
-            var tCellModel = new TCellModelProvider(K1, K2, dummyFieldCOx, dummyVelocityDivergenceAtElementGaussPoints, comsolReader, tCellMonitorDOF, tCellMonitorID , tCellNeumannBC, tCellDirichletBC, initialTCellDensity);
+            var tCellModel = new TCellModelProvider(K1, K2, dummyFieldCOx, dummyVelocityDivergenceAtElementGaussPoints, comsolReader, tCellMonitorDOF, tCellMonitorID , tCellDirichletBC,tCellNeumannBC, initialTCellDensity);
             
             //COMMITED BY NACHO 
             //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------

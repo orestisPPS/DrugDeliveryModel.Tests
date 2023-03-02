@@ -73,8 +73,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// Simplified version of the production term without non-linear term
         /// </summary>
-        //private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
-        private readonly Func<double> dependantSourceCoefficient =() => 0d;
+        private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
+        //private readonly Func<double> dependantSourceCoefficient =() => 0d;
         
         //---------------------------------------Initial conditions------------------------------
         private double initialTCellDensity = 500d;
@@ -92,7 +92,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
             {
                 (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0.1}}, boundaryValue),
-                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.RightDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.LeftDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
                 (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
             };
 
