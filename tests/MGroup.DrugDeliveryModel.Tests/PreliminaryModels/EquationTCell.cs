@@ -33,6 +33,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// The average value of the three components of the solid tumor velocity vector  [m/s]
         /// </summary>
         private const double SolidSpeed = 2.32E-4; // [m/s]
+        //private const double SolidSpeed = -5d; // [m/s]
 
         /// <summary>
         /// Growth rate parameter 1[mol/(m3)]
@@ -63,7 +64,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         
 
         //---------------------------------------Time Discretization Specs------------------------------
-        private const double TotalTime = 1E-2;
+        //private const double TotalTime = 2 * 1E-2;
+        private const double TotalTime = 1E-4;
         
         /// <summary>
         /// For increased accuracy use time-step of order 1E-5
@@ -77,7 +79,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         //private readonly Func<double> dependantSourceCoefficient =() => 0d;
         
         //---------------------------------------Initial conditions------------------------------
-        private double initialTCellDensity = 500d;
+        private double initialTCellDensity = 0d;
         
         private Model model;
 
@@ -87,13 +89,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>();
 
         private static ConvectionDiffusionDof[] constrainedDofType = new ConvectionDiffusionDof[1] { ConvectionDiffusionDof.UnknownVariable };
-        private static double[] boundaryValue = new double[1] { 0d };
+        private static double[] boundaryValue = new double[1] { 500d };
         private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> dirichletBC =
             new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
             {
-                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0.1}}, boundaryValue),
-                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.LeftDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1,0,0}}, boundaryValue),
-                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.FrontDirichlet, constrainedDofType, new double[1][]{new double[3] {0,0,0}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1, 0.1, 0.1}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.RightDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1, 0.1, 0.1}}, boundaryValue),
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.BackDirichlet, constrainedDofType, new double[1][]{new double[3] {0.1, 0.1, 0.1}}, boundaryValue),
             };
 
         private EquationTCellModelProvider ModelProvider;
@@ -114,7 +116,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var model = ModelProvider.GetModel();
             ModelProvider.AddBoundaryConditions(model);
-            ModelProvider.AddInitialConditions(model);
+            //ModelProvider.AddInitialConditions(model);
             
 
             var dynamicAnalyzer = ModelProvider.GetAppropriateSolverAnalyzerAndLog(model, TimeStep, TotalTime, 0).Item1;

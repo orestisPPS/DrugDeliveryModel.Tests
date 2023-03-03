@@ -217,7 +217,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         #region Cancer Cell Density (TCell) Boundary Conditions
         
             private static ConvectionDiffusionDof[] TCellDofType = new ConvectionDiffusionDof[1] { ConvectionDiffusionDof.UnknownVariable };
-            private static double[] TcellBoundaryValue = new double[1] { 0d };
+            private static double[] TcellBoundaryValue = new double[1] { 500d };
             private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> tCellDirichletBC =
                 new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
                 {
@@ -233,7 +233,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         #region Cancer Cell Density (TCell)  Initial condition
         
-        private double initialTCellDensity = 500d;
+        private double initialTCellDensity = 0d;
 
         #endregion
 
@@ -307,7 +307,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 var velocityDiv = new double[nGaussPoints];
                 for (int i1 = 0; i1 < nGaussPoints; i1++)
                 {
-                    velocityDiv[i1] =  dummySolidVelovity;
+                    //velocityDiv[i1] =  dummySolidVelovity;
+                    velocityDiv[i1] =  0d;
                 }
                 dummyVelocityDivergenceAtElementGaussPoints.Add(elem.Key, velocityDiv);
             }
@@ -419,7 +420,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 gp_div_v_OverTime[currentTimeStep]= ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocityDivergence[0];
                 
                 
-                tCell[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[2].GetNode(tCellMonitorID), tCellMonitorDOF];
+                tCell[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[2].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[2].GetNode(tCellMonitorID), tCellMonitorDOF];
                 
                 //model maximus (DO NOT ERASE)
                 //modelMaxVelDivOverTime[currentTimeStep] = velocityDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0])).ToArray().Max();
