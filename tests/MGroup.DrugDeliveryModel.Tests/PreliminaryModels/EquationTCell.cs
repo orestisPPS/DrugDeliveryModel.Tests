@@ -59,7 +59,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The coordinates of the monitored node
         /// </summary>
-        //private double[] monitorNodeCoords = { 0.05, 0.05, 0.05 };
+        //private double[] monitorNodeCoords = { 0.06, 0.06, 0.06 };
         private double[] monitorNodeCoords = { 0.0, 0.0, 0.0 };
         
 
@@ -75,11 +75,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// Simplified version of the production term without non-linear term
         /// </summary>
-        private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
-        //private readonly Func<double> dependantSourceCoefficient =() => 0d;
+        //private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
+        private readonly Func<double> dependantSourceCoefficient =() => 0d;
         
         //---------------------------------------Initial conditions------------------------------
-        private double initialTCellDensity = 0d;
+        //private double initialTCellDensity = 0d;
+        private double initialTCellDensity = 500d;
         
         private Model model;
 
@@ -89,7 +90,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>();
 
         private static ConvectionDiffusionDof[] constrainedDofType = new ConvectionDiffusionDof[1] { ConvectionDiffusionDof.UnknownVariable };
-        private static double[] boundaryValue = new double[1] { 500d };
+        private static double[] boundaryValue = new double[1] { 0d };
+        //private static double[] boundaryValue = new double[1] { 00d };
         private static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> dirichletBC =
             new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
             {
@@ -116,23 +118,24 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var model = ModelProvider.GetModel();
             ModelProvider.AddBoundaryConditions(model);
-            //ModelProvider.AddInitialConditions(model);
+            ModelProvider.AddInitialConditions(model);
             
-
             var dynamicAnalyzer = ModelProvider.GetAppropriateSolverAnalyzerAndLog(model, TimeStep, TotalTime, 0).Item1;
-            ((NewmarkDynamicAnalyzer)dynamicAnalyzer).ResultStorage = new ImplicitIntegrationAnalyzerLog();
+            var linearAnalyzer = ModelProvider.GetAppropriateSolverAnalyzerAndLog(model, TimeStep, TotalTime, 0).Item3;
+            
+            
             dynamicAnalyzer.Initialize(true);
             dynamicAnalyzer.Solve();
-            
-            var totalNewmarkStepsNum = (int)Math.Truncate(TotalTime / TimeStep);
-            var tCell = new double[totalNewmarkStepsNum];
-            for (int i1 = 0; i1 < totalNewmarkStepsNum; i1++)
+
+            int totalNewmarkstepsNum = (int)Math.Truncate(TimeStep / TotalTime);
+            var tcell = new double[totalNewmarkstepsNum];
+            for (int i1 = 0; i1 < totalNewmarkstepsNum; i1++)
             {
-                var timeStepResultsLog = dynamicAnalyzer.Logs[i1];
-                tCell[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), MonitorDOFType];
+                //var timeStepResultsLog = dynamicAnalyzer.ResultStorage.Logs[i1];
+                //cox[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), MonitorDOFType];
             }
             
-            CSVExporter.ExportVectorToCSV(tCell, "../../../Integration/Tc_nodes_mslv.csv");
+            //CSVExporter.ExportVectorToCSV(tCell, "../../../Integration/tcell_nodes_mslv.csv");
         }
 
         

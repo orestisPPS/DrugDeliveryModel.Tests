@@ -94,40 +94,73 @@ public class EquationTCellModelProvider
         BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionICToModel(model, InitialCondition);
     }
     
-        public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog
-        (Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep)
+    public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog
+    (Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep)
+    {
+        var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; //Dense Matrix Solver solves with zero matrices!
+        var algebraicModel = solverFactory.BuildAlgebraicModel(model);
+        var solver = solverFactory.BuildSolver(algebraicModel);
+        var problem = new ProblemConvectionDiffusion(model, algebraicModel);
+
+        var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
+
+        var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime); 
+        var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
+        
+        
+        var watchDofs = new List<(INode node, IDofType dof)>()
         {
-            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; //Dense Matrix Solver solves with zero matrices!
-            //var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
+            (model.NodesDictionary[MonitorNodeId], MonitorDOFType),
+        };
+        
+
+        linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
+
+
+        dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
+
+        
+        return (dynamicAnalyzer, solver, linearAnalyzer);
+    }
+}
+
+/*
+          
+            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
             var solver = solverFactory.BuildSolver(algebraicModel);
-            var provider = new ProblemConvectionDiffusion(model, algebraicModel);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
-            var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, provider);
+            var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, problem);
 
-            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, provider, numIncrements: 1)
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime); 
+            //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, linearAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
+            var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
+
+            // Create a log for the desired dof
+            var nodeIdToMonitor =Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-3);
+            var watchDofs = new List<(INode node, IDofType dof)>()
             {
-                ResidualTolerance = 1E-8,
-                MaxIterationsPerIncrement = 100,
-                NumIterationsForMatrixRebuild = 1
+                (model.NodesDictionary[nodeIdToMonitor], coxMonitorDOF),
             };
-            var loadControlAnalyzer = loadControlAnalyzerBuilder.Build();
 
-            loadControlAnalyzer.TotalDisplacementsPerIterationLog = new TotalDisplacementsPerIterationLog(new List<(INode node, IDofType dof)>()
-            {(model.NodesDictionary[MonitorNodeId], MonitorDOFType)}, algebraicModel);
+            linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
 
-            var analyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, false, currentStep: currentStep);
-            analyzerBuilder.SetNewmarkParametersForConstantAcceleration();
-            var analyzer = analyzerBuilder.Build();
-            var watchDofs = new[]
+
+            dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
+            dynamicAnalyzer.Initialize();
+            dynamicAnalyzer.Solve();
+
+            int totalNewmarkstepsNum = (int)Math.Truncate(TotalTime / TimeStep);
+            var cox = new double[totalNewmarkstepsNum];
+            for (int i1 = 0; i1 < totalNewmarkstepsNum; i1++)
             {
-                new List<(INode node, IDofType dof)>()
-                {
-                    (model.NodesDictionary[MonitorNodeId], MonitorDOFType),
-                }
-            };
-            loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel);
-
-            return (analyzer, solver, loadControlAnalyzer);
+                var timeStepResultsLog = dynamicAnalyzer.ResultStorage.Logs[i1];
+                cox[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), coxMonitorDOF];
+            }
+            
+            CSVExporter.ExportVectorToCSV(cox, "../../../Integration/Tc_nodes_mslv.csv");
         }
-}
+
+
+}*/
