@@ -1,4 +1,3 @@
-/*
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -80,7 +79,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
         //---------------------------------------Time Discretization Specs------------------------------
-        private const double TotalTime = 1E-2;
+        private const double TotalTime = 2.5E-3; //0.0025
 
         /// <summary>
         /// For increased accuracy use time-step of order 1E-5
@@ -92,7 +91,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// </summary>
         private readonly Func<double> simpleDependentLinearSource =() => -PerOx * Sv;
 
-        private readonly Func<double> independentLinearSource =() => PerOx * Sv * CInitOx;
+        private readonly Func<double> independentLinearSource =() => PerOx * Sv * 0.2d;
 
         public void EquationsTests13DistributedModelBuilder()
         {
@@ -111,17 +110,15 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             return -PerOx * Sv - Aox * T / (Cox + Kox) + Aox * T * Cox * Math.Pow(Cox + Kox, -2);
         }
 
-        //public static double ProductionFuncWithoutConstantTerm(double Cox)
-        //{
-        //    return -PerOx * Sv*Cox;
-        //}
+        public static double LinearProductionFuncWithoutConstantTerm(double Cox)
+        {
+            return -PerOx*Sv*Cox;
+        }
 
-        ////Non - Linear Derivative
-        //public static double ProductionFuncWithoutConstantTermDDerivative(double Cox)
-        //{
-        //    return -PerOx * Sv;
-        //}
-
+        public static double LinearProductionFuncWithoutConstantTermDDerivative(double Cox)
+        {
+            return -PerOx * Sv;
+        }
 
         [Theory]
         [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
@@ -226,13 +223,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
             var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
                 dependentProductionCoefficients, independentProductionCoefficients, capacity,
-                ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative);
+                LinearProductionFuncWithoutConstantTerm, LinearProductionFuncWithoutConstantTermDDerivative);
             //var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
             //    dependentProductionCoefficients, independentProductionCoefficients, capacity);
 
             //Assign Boundary Conditions
             AddTopRightBackNodesBC(model, 0d, 0.1, 0, 0.1, 0, 0.1, CInitOx);
-            //AddInitialConditions(model, 0d, 0.1, 0, 0.1, 0, 0.1, 0d);
+            AddInitialConditions(model, 0d, 0.1, 0, 0.1, 0, 0.1, CInitOx);
 
 
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
@@ -312,35 +309,17 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(dirichletBCs, new INodalConvectionDiffusionNeumannBoundaryCondition[] {}));
         }
 
-        private void AddInitialConditions(Model model, double initialCondition,
+        private void AddInitialConditions(Model model,
                                                   double modelMinX,double modelMaxX,
                                                   double modelMinY,double modelMaxY,
-                                                  double modelMinZ,double modelMaxZ)
+                                                  double modelMinZ,double modelMaxZ, double initialCondition)
         {
-            var topNodes = new List<INode>();
-            var bottomNodes = new List<INode>();
-            var leftNodes = new List<INode>();
-            var rightNodes = new List<INode>();
-            var frontNodes = new List<INode>();
-            var backNodes = new List<INode>();
-            var innerBulkNodes = new List<INode>();
             var tol = 1E-5;
-
+            var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
             foreach (var node in model.NodesDictionary.Values)
             {
-                if (Math.Abs(modelMaxZ - node.Z) < tol) topNodes.Add(node);
-                if (Math.Abs(modelMinZ - node.Z) < tol) bottomNodes.Add(node);
-                if (Math.Abs(modelMinX - node.X) < tol) leftNodes.Add(node);
-                if (Math.Abs(modelMaxX - node.X) < tol) rightNodes.Add(node);
-                if (Math.Abs(modelMinY - node.Y) < tol) frontNodes.Add(node);
-                if (Math.Abs(modelMaxY - node.Y) < tol) backNodes.Add(node);
-                innerBulkNodes.Add(node);
-            }
-
-            var initialConditions = new List<INodalConvectionDiffusionInitialCondition>();
-            foreach (var node in innerBulkNodes)
-            {
-                initialConditions.Add(new NodalInitialUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, initialCondition));
+                if  ((Math.Abs(modelMaxZ - node.Z) >= tol) && (Math.Abs(modelMaxX - node.X) >= tol) && (Math.Abs(modelMaxY - node.Y) >= tol))
+                    initialConditions.Add(new NodalInitialUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, initialCondition));
             }
             model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
         }
@@ -348,4 +327,3 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
     }
 }
-*/
