@@ -151,7 +151,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             };
 
-            var emptyNeumannBC = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>();
+            var emptyNeumannBC = new List<(BC, ConvectionDiffusionDof[], double[][], double[])>();
 
             var modelBuilder = new TCellModelProvider(K1, K2, dummyFieldCOx,  dummyVelocityDivergenceAtElementGaussPoints, comsolReader,
                 coxMonitorDOF, nodeIdToMonitor, DirichletBCsList, emptyNeumannBC, Tinitial);

@@ -368,11 +368,11 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             #endregion
 
             //Create Model For Pressure
-            var pressureModel = new FluidPhaseModelProvider(comsolReader, k_th_tumor, k_th_host, Lp, Sv, pv,
+            var pressureModel = new Eq78ModelProviderForStaggeredSolutionex7ref(comsolReader, k_th_tumor, k_th_host, Lp, Sv, pv,
                 LplSvl_tumor, LplSvl_host, pl, velocityDivergenceAtElementGaussPoints , pressureMonitorID, pressureMonitorDOF ,pressureDirichletBC, pressureNeumannBC);
             
             //Create Model For Structural
-            var structuralModel = new SolidPhaseModelProvider(comsolReader, Sc, miNormal, kappaNormal, miTumor,
+            var structuralModel = new Eq9ModelProviderForStaggeredSolutionEx7Ref(comsolReader, Sc, miNormal, kappaNormal, miTumor,
                 kappaTumor, density, timeStep, totalTime, lambda, pressureTensorDivergenceAtElementGaussPoints,
                 structuralMonitorID, structuralMonitorDOF,structuralNeumannBC, structuralDirichletBC);
              

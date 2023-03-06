@@ -37,7 +37,9 @@ public class BoundaryAndInitialConditionsUtility
 		
 		TopDirichlet,
 		TopPointFlux,
-		TopDistributedFlux
+		TopDistributedFlux,
+
+		TopRightBackDiriclet
 	}
 	
 	public static void AssignStructuralDirichletBCsToModel(Model model,

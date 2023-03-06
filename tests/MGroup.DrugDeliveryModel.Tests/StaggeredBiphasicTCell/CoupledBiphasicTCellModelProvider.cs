@@ -25,8 +25,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
 	public class CoupledBiphasicTCellModelProvider
     {
-        public FluidPhaseModelProvider FluidPhaseModelProvider { get; }
-        public SolidPhaseModelProvider SolidPhaseModelProvider { get; }
+        public Eq78ModelProviderForStaggeredSolutionex7ref eq78ModelProviderForCouplin { get; }
+        public Eq9ModelProviderForStaggeredSolutionEx7Ref Eq9ModelProviderForStaggeredSolutionEx7Ref { get; }
         public TCellModelProvider TCellModelProvider { get; }
 
         public Model[] model;
@@ -60,15 +60,15 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         private int incrementsPerStep;
 
-        public CoupledBiphasicTCellModelProvider(FluidPhaseModelProvider fluidPhaseModelProvider,
-                                                 SolidPhaseModelProvider solidPhaseProvider,
+        public CoupledBiphasicTCellModelProvider(Eq78ModelProviderForStaggeredSolutionex7ref Eq78ModelProviderForStaggeredSolutionex7ref,
+                                                 Eq9ModelProviderForStaggeredSolutionEx7Ref solidPhaseProvider,
                                                  TCellModelProvider tCellModelProvider,
                                                  ComsolMeshReader comsolReader,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             Dictionary<int, double[]> div_vs, double timeStep, double totalTime, int incrementsPerStep)
         {
-            SolidPhaseModelProvider = solidPhaseProvider;
-            FluidPhaseModelProvider = fluidPhaseModelProvider;
+            Eq9ModelProviderForStaggeredSolutionEx7Ref = solidPhaseProvider;
+            eq78ModelProviderForCouplin = Eq78ModelProviderForStaggeredSolutionex7ref;
             TCellModelProvider = tCellModelProvider;
             IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
 
@@ -118,14 +118,14 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             model = new Model[3];
             
             //Create model for eq78 (fluid pressure)
-            model[0] = FluidPhaseModelProvider.GetModel();
-            FluidPhaseModelProvider.AddBoundaryConditions(model[0]);
-            (analyzers[0], solvers[0], nlAnalyzers[0]) = FluidPhaseModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
+            model[0] = eq78ModelProviderForCouplin.GetModel();
+            eq78ModelProviderForCouplin.AddBoundaryConditions(model[0]);
+            (analyzers[0], solvers[0], nlAnalyzers[0]) = eq78ModelProviderForCouplin.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
             //Create model for eq9 (hyper-elastic material)
-            model[1] = SolidPhaseModelProvider.GetModel();
-            SolidPhaseModelProvider.AddBoundaryConditions(model[1]);
-            (analyzers[1], solvers[1], nlAnalyzers[1]) = SolidPhaseModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
+            model[1] = Eq9ModelProviderForStaggeredSolutionEx7Ref.GetModel();
+            Eq9ModelProviderForStaggeredSolutionEx7Ref.AddBoundaryConditions(model[1]);
+            (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProviderForStaggeredSolutionEx7Ref.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
             
             model[2] = TCellModelProvider.GetModel();
             TCellModelProvider.AddBoundaryConditions(model[2]);
@@ -163,17 +163,17 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             model = new Model[3];
             
-            model[0] = FluidPhaseModelProvider.GetModel();
-            FluidPhaseModelProvider.AddBoundaryConditions(model[0]);
+            model[0] = eq78ModelProviderForCouplin.GetModel();
+            eq78ModelProviderForCouplin.AddBoundaryConditions(model[0]);
             if(CurrentTimeStep==0)
             {
                 //Eq78ModelProvider.AddEq78ModelInitialConditions(model[0]);
             }
-            (analyzers[0], solvers[0], nlAnalyzers[0]) = FluidPhaseModelProvider.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
+            (analyzers[0], solvers[0], nlAnalyzers[0]) = eq78ModelProviderForCouplin.GetAppropriateSolverAnalyzerAndLog(model[0], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
 
-            model[1] = SolidPhaseModelProvider.GetModel();
-            SolidPhaseModelProvider.AddBoundaryConditions(model[1]);
-            (analyzers[1], solvers[1], nlAnalyzers[1]) = SolidPhaseModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
+            model[1] = Eq9ModelProviderForStaggeredSolutionEx7Ref.GetModel();
+            Eq9ModelProviderForStaggeredSolutionEx7Ref.AddBoundaryConditions(model[1]);
+            (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProviderForStaggeredSolutionEx7Ref.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
             
             
             model[2] = TCellModelProvider.GetModel();
@@ -201,7 +201,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public void SaveStateFromElements()
         {
-            SolidPhaseModelProvider.SaveStateFromElements(model[1]);
+            Eq9ModelProviderForStaggeredSolutionEx7Ref.SaveStateFromElements(model[1]);
         }
     }
 }

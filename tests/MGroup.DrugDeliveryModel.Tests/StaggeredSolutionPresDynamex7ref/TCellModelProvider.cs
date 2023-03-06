@@ -15,6 +15,8 @@ using MGroup.MSolve.Solution;
 using MGroup.NumericalAnalyzers;
 using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 using System.Linq;
+using System.Xml.Linq;
+using BC = MGroup.DrugDeliveryModel.Tests.Commons.BoundaryAndInitialConditionsUtility.BoundaryConditionCase;
 
 namespace MGroup.DrugDeliveryModel.Tests.PreliminaryModels;
 
@@ -29,16 +31,16 @@ public class TCellModelProvider
     private ComsolMeshReader Mesh { get; }
     private ConvectionDiffusionDof MonitorDOFType { get; }
     private int MonitorNodeId { get; }
-    private List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> DirichletBCs { get; }
-    private List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> NeumannBCs { get; }
+    private List<(BC, ConvectionDiffusionDof[], double[][], double[])> DirichletBCs { get; }
+    private List<(BC, ConvectionDiffusionDof[], double[][], double[])> NeumannBCs { get; }
 
     private double InitialCondition { get; }
 
     public TCellModelProvider(double k1, double k2, Dictionary<int, double> domainCOx, Dictionary<int, double[]> solidVelocityDivergence,
         ComsolMeshReader mesh,
         ConvectionDiffusionDof tCellMonitorDOFType, int monitorNodeId,
-        List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> dirichletBCs,
-        List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> neumannBCs,
+        List<(BC, ConvectionDiffusionDof[], double[][], double[])> dirichletBCs,
+        List<(BC, ConvectionDiffusionDof[], double[][], double[])> neumannBCs,
         double initialCondition)
     {
         K1 = k1;
@@ -103,20 +105,105 @@ public class TCellModelProvider
 
             switch (RegionType)
             {
-                case BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopRightBackDiriclet:
+                case BC.TopRightBackDiriclet:
                     {
                         double modelMinX = CaracteristicCoords[0][0]; double modelMinY = CaracteristicCoords[0][1]; double modelMinZ = CaracteristicCoords[0][2];
                         double modelMaxX = CaracteristicCoords[1][0]; double modelMaxY = CaracteristicCoords[1][1]; double modelMaxZ = CaracteristicCoords[1][2];
                         AddTopRightBackNodesBC(model, prescrVal[0], modelMinX, modelMaxX, modelMinY, modelMaxY, modelMinZ, modelMaxZ);
                         break;
                     }
-
-                
-
-
+                case BC.LeftDirichlet or BC.RightDirichlet:
+                    {
+                        double xCoordin = CaracteristicCoords[0][0];
+                        AddXFaceBcs(model, xCoordin, prescrVal[0], ConvectionDiffusionDof.UnknownVariable);
+                        break;
+                    }
+                case BC.FrontDirichlet or BC.BackDirichlet:
+                    {
+                        double yCoordin = CaracteristicCoords[0][1];
+                        AddYFaceBcs(model, yCoordin, prescrVal[0], ConvectionDiffusionDof.UnknownVariable);
+                        break;
+                    }
+                case BC.TopDirichlet or BC.BottomDirichlet:
+                    {
+                        // TODO: pithanws to ConvectionDiffusionDof.UnknownVariable antikathistatai me duo periptwseis analoga to Bcstype
+                        double zCoordin = CaracteristicCoords[0][2];
+                        AddZFaceBcs(model, zCoordin, prescrVal[0], ConvectionDiffusionDof.UnknownVariable);
+                        break;
+                    }
 
             }
         }
+
+    }
+
+    public void AddXFaceBcs(Model model, double xCoordOfFace, double dirichleValue, ConvectionDiffusionDof dofTypeToPrescribeDircihle)
+    {
+
+        var xFaceNodes = new List<INode>();
+        foreach (var node in model.NodesDictionary.Values)
+        {
+            if (Math.Abs(xCoordOfFace - node.X) < 1E-9) xFaceNodes.Add(node);
+        }
+
+        var dirichletBCs = new List<NodalUnknownVariable>();
+        foreach (var node in xFaceNodes)
+        {
+            dirichletBCs.Add(new NodalUnknownVariable(node, dofTypeToPrescribeDircihle, dirichleValue));
+        }
+
+
+        model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+            dirichletBCs,
+            new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+        ));
+
+    }
+
+    public void AddYFaceBcs(Model model, double yCoordOfFace, double dirichleValue, ConvectionDiffusionDof dofTypeToPrescribeDircihle)
+    {
+
+        var yFaceNodes = new List<INode>();
+        foreach (var node in model.NodesDictionary.Values)
+        {
+            if (Math.Abs(yCoordOfFace - node.Y) < 1E-9) yFaceNodes.Add(node);
+        }
+
+        var dirichletBCs = new List<NodalUnknownVariable>();
+        foreach (var node in yFaceNodes)
+        {
+            dirichletBCs.Add(new NodalUnknownVariable(node, dofTypeToPrescribeDircihle, dirichleValue));
+        }
+
+
+        model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+            dirichletBCs,
+            new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+        ));
+
+    }
+
+
+    public void AddZFaceBcs(Model model, double zCoordOfFace, double dirichleValue, ConvectionDiffusionDof dofTypeToPrescribeDircihle)
+    {
+
+        var zFaceNodes = new List<INode>();
+        foreach (var node in model.NodesDictionary.Values)
+        {
+            if (Math.Abs(zCoordOfFace - node.Z) < 1E-9) zFaceNodes.Add(node);
+        }
+
+        var dirichletBCs = new List<NodalUnknownVariable>();
+        foreach (var node in zFaceNodes)
+        {
+            dirichletBCs.Add(new NodalUnknownVariable(node, dofTypeToPrescribeDircihle, dirichleValue));
+        }
+
+
+        model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
+            dirichletBCs,
+            new INodalConvectionDiffusionNeumannBoundaryCondition[] { }
+        ));
 
     }
 
