@@ -29,42 +29,42 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The average value of the three components of the fluid velocity vector  [m/s]
         /// </summary>
-        // private const double FluidSpeed; // [m/s]
+        private readonly double FluidSpeed; // [m/s]
 
-        // /// <summary>
-        // /// Diffusivity of oxygen [m2/s]
-        // /// </summary>
-        // private const double Dox; // [m2/s]
+        /// <summary>
+        /// Diffusivity of oxygen [m2/s]
+        /// </summary>
+        private readonly double Dox; // [m2/s]
 
-        // /// <summary>
-        // /// Oxygen uptake [mol/(m3*s)]
-        // /// </summary>
-        // private const double Aox; // [mol/(m3*s)]
+        /// <summary>
+        /// Oxygen uptake [mol/(m3*s)]
+        /// </summary>
+        private readonly double Aox; // [mol/(m3*s)]
 
-        // /// <summary>
-        // /// Oxygen uptake [mol/m3]
-        // /// </summary>
-        // private const double Kox; // [mol / m3]
+        /// <summary>
+        /// Oxygen uptake [mol/m3]
+        /// </summary>
+        private readonly double Kox; // [mol / m3]
 
-        // /// <summary>
-        // /// Oxygen permeability across tumor vessel walls [m/s]
-        // /// </summary>
-        // private const double PerOx; // [m/s]
+        /// <summary>
+        /// Oxygen permeability across tumor vessel walls [m/s]
+        /// </summary>
+        private readonly double PerOx; // [m/s]
 
-        // /// <summary>
-        // /// Vascular Density [1/m]
-        // /// </summary>
-        // private const double Sv; // [1/m]
+        /// <summary>
+        /// Vascular Density [1/m]
+        /// </summary>
+        private readonly double Sv; // [1/m]
 
-        // /// <summary>
-        // /// Initial Oxygen Concentration [mol/m3]
-        // /// </summary>
-        // private const double CInitOx; // [mol/m3]
+        /// <summary>
+        /// Initial Oxygen Concentration [mol/m3]
+        /// </summary>
+        private readonly double CInitOx; // [mol/m3]
 
-        // /// <summary>
-        // /// Cancer cell density [1]
-        // /// </summary>
-        // private const double T; // [cells]
+        /// <summary>
+        /// Cancer cell density [1]
+        /// </summary>
+        private readonly double T; // [cells]
 
         /// <summary>
         /// Term without non-linear term
@@ -73,9 +73,11 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         private readonly Func<double> independentLinearSource;
 
-        private readonly Func<double> ProductionFuncWithoutConstantTerm;
+        private readonly Func<double, double> ProductionFuncWithoutConstantTerm;
 
-        private readonly Func<double> ProductionFuncWithoutConstantTermDDerivative;
+        private readonly Func<double, double> ProductionFuncWithoutConstantTermDDerivative;
+
+        private readonly ComsolMeshReader mesh;
 
         /// <summary>
         /// List containing the DIRICHLET boundary conditions for the Convection Diffusion problem.
@@ -110,68 +112,66 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         private ComsolMeshReader modelReader;
 
-        // public Eq78ModelProviderForStaggeredSolutionex7ref(ComsolMeshReader modelReader,
-        //     double FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInit, double T, double initialCondition,
-        //     Func<double> simpleDependentLinearSource, Func<double> independentLinearSource, Func<double> ProductionFuncWithoutConstantTerm, Func<double> ProductionFuncWithoutConstantTermDDerivative,
-        //     int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
-        //     List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
-        //     List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC )
-        // {
-        //     this.FluidSpeed = FluidSpeed;
-        //     this.Dox = Dox;
-        //     this.Aox = Aox;
-        //     this.Kox = Kox;
-        //     this.PerOx = PerOx;
-        //     this.Sv = Sv;
-        //     this.CInit = CInit;
-        //     this.T = T;
-        //     this.initialCondition = initialCondition;
+        public CoxModelBuilder(ComsolMeshReader modelReader,
+            double FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, double T, double initialCondition,
+            Func<double> simpleDependentLinearSource, Func<double> independentLinearSource, Func<double, double> ProductionFuncWithoutConstantTerm, Func<double, double> ProductionFuncWithoutConstantTermDDerivative,
+            int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
+            List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
+            List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC )
+        {
+            this.mesh = modelReader;
+            this.FluidSpeed = FluidSpeed;
+            this.Dox = Dox;
+            this.Aox = Aox;
+            this.Kox = Kox;
+            this.PerOx = PerOx;
+            this.Sv = Sv;
+            this.CInitOx = CInitOx;
+            this.T = T;
+            this.initialCondition = initialCondition;
 
-        //     this.modelReader = modelReader;
-        //     IsoparametricJacobian3D.DeterminantTolerance = 1e-30;
+            this.modelReader = modelReader;
+            IsoparametricJacobian3D.DeterminantTolerance = 1e-30;
 
-        //     this.convectionDiffusionDirichletBC = convectionDiffusionDirichletBC;
-        //     this.convectionDiffusionNeumannBC = convectionDiffusionNeumannBC;
+            this.convectionDiffusionDirichletBC = convectionDiffusionDirichletBC;
+            this.convectionDiffusionNeumannBC = convectionDiffusionNeumannBC;
 
-        //     this.initialCondition = initialCondition;
+            this.initialCondition = initialCondition;
 
-        //     //log
-        //     this.nodeIdToMonitor = nodeIdToMonitor;
-        //     this.dofTypeToMonitor = dofTypeToMonitor;
+            //log
+            this.nodeIdToMonitor = nodeIdToMonitor;
+            this.dofTypeToMonitor = dofTypeToMonitor;
 
-        // }
+        }
 
-        // public Model GetModel()
-        // {
-        //     var capacity = 1;
-        //     var diffusionCoefficient = Dox;
-        //     var convectionCoefficient = FluidSpeed;
-        //     var independentSourceCoefficient = independentLinearSource();
-        //     var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
+        public Model GetModel()
+        {
+            // var capacity = 1;
+            // var diffusionCoefficient = Dox;
+            // var convectionCoefficient = FluidSpeed;
+            // var independentSourceCoefficient = independentLinearSource();
+            // var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
 
-        //     //Read Mesh From comsol file
-        //     var mesh = new ComsolMeshReader(fileName);
+            // //Assign equation properties to the domain elements
+            // var convectionDomainCoefficients = new Dictionary<int, double[]>();
+            // var dependentProductionCoefficients = new Dictionary<int, double>();
+            // var independentProductionCoefficients = new Dictionary<int, double>();
 
-        //     //Assign equation properties to the domain elements
-        //     var convectionDomainCoefficients = new Dictionary<int, double[]>();
-        //     var dependentProductionCoefficients = new Dictionary<int, double>();
-        //     var independentProductionCoefficients = new Dictionary<int, double>();
+            // foreach (var elementConnectivity in mesh.ElementConnectivity)
+            // {
+            //     convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
+            //     dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
+            //     independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
+            // }
 
-        //     foreach (var elementConnectivity in mesh.ElementConnectivity)
-        //     {
-        //         convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
-        //         dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
-        //         independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
-        //     }
-
-        //     //Create Model
-        //     var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
-        //     var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
-        //         dependentProductionCoefficients, independentProductionCoefficients, capacity,
-        //         LinearProductionFuncWithoutConstantTerm, LinearProductionFuncWithoutConstantTermDDerivative);
-
-        //     return model;
-        // }
+            // //Create Model
+            // var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
+            // var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
+            //     dependentProductionCoefficients, independentProductionCoefficients, capacity,
+            //     ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative);
+            var model = new Model();
+            return model;
+        }
 
         // public void AddBoundaryConditions(Model model)
         // {

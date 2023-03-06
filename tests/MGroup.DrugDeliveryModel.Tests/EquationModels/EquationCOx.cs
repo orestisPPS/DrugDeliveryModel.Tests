@@ -200,34 +200,43 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
         public void SolveEquationCOxNonLinearProduction(string fileName)
         {
-            var capacity = 1;
-            var diffusionCoefficient = Dox;
-            var convectionCoefficient = FluidSpeed;
-            var independentSourceCoefficient = independentLinearSource();
-            var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
+            // var capacity = 1;
+            // var diffusionCoefficient = Dox;
+            // var convectionCoefficient = FluidSpeed;
+            // var independentSourceCoefficient = independentLinearSource();
+            // var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
 
-            //Read Mesh From comsol file
+            // //Read Mesh From comsol file
+            // var mesh = new ComsolMeshReader(fileName);
+
+            // //Assign equation properties to the domain elements
+            // var convectionDomainCoefficients = new Dictionary<int, double[]>();
+            // var dependentProductionCoefficients = new Dictionary<int, double>();
+            // var independentProductionCoefficients = new Dictionary<int, double>();
+
+            // foreach (var elementConnectivity in mesh.ElementConnectivity)
+            // {
+            //     convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
+            //     dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
+            //     independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
+            // }
+
+            // //Create Model
+            // var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
+            // var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
+            //     dependentProductionCoefficients, independentProductionCoefficients, capacity,
+            //     ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative);
+            // //var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
+            // //    dependentProductionCoefficients, independentProductionCoefficients, capacity);
+
+
             var mesh = new ComsolMeshReader(fileName);
+            var convectionDiffusionDirichletBC = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>();
+            var convectionDiffusionNeumannBC = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>();
+            var modelBuilder = new CoxModelBuilder(mesh, FluidSpeed, Dox, Aox, Kox, PerOx, Sv, CInitOx, T, CInitOx, simpleDependentLinearSource, independentLinearSource, ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative, 0, coxMonitorDOF, convectionDiffusionDirichletBC, convectionDiffusionNeumannBC);
+            var model = modelBuilder.GetModel();
+            Assert.True(true);
 
-            //Assign equation properties to the domain elements
-            var convectionDomainCoefficients = new Dictionary<int, double[]>();
-            var dependentProductionCoefficients = new Dictionary<int, double>();
-            var independentProductionCoefficients = new Dictionary<int, double>();
-
-            foreach (var elementConnectivity in mesh.ElementConnectivity)
-            {
-                convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
-                dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
-                independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
-            }
-
-            //Create Model
-            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
-            var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
-                dependentProductionCoefficients, independentProductionCoefficients, capacity,
-                LinearProductionFuncWithoutConstantTerm, LinearProductionFuncWithoutConstantTermDDerivative);
-            //var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
-            //    dependentProductionCoefficients, independentProductionCoefficients, capacity);
 
             //Assign Boundary Conditions
             AddTopRightBackNodesBC(model, 0d, 0.1, 0, 0.1, 0, 0.1, CInitOx);
