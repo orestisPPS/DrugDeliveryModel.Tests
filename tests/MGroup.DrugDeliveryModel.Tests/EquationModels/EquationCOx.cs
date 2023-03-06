@@ -59,7 +59,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// Initial Oxygen Concentration [mol/m3]
         /// </summary>
-        private const double CInitOx = 0.2; // [mol/m3]
+        private const double CInitOx = 0.0; // [mol/m3]
 
         /// <summary>
         /// Cancer cell density [1]
@@ -79,7 +79,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
         //---------------------------------------Time Discretization Specs------------------------------
-        private const double TotalTime = 2.5E-3; //0.0025
+        private const double TotalTime = 1E-4;
 
         /// <summary>
         /// For increased accuracy use time-step of order 1E-5
@@ -92,6 +92,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private readonly Func<double> simpleDependentLinearSource =() => -PerOx * Sv;
 
         private readonly Func<double> independentLinearSource =() => PerOx * Sv * 0.2d;
+
+        static double[] expectedNonLinSolution = new double[]{9.952416725005e-09, 4.896493604393285e-06, 9.665813247845585e-06, 1.43115852199743e-05, 1.8833843049549025e-05, 2.323495649711853e-05, 2.7518005383475427e-05, 3.16862353421655e-05, 3.574287746066782e-05, 3.969109022654444e-05}; //bc=0, ic=0
 
         public void EquationsTests13DistributedModelBuilder()
         {
@@ -275,6 +277,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             CSVExporter.ExportVectorToCSV(cox, "../../../Integration/cox_non_linear_nodes_mslv.csv");
             Console.WriteLine("FINISHED solving Cox Non-Linear prod");
+            Assert.True(CompareResults(cox));
 
         }
 
@@ -322,6 +325,25 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                     initialConditions.Add(new NodalInitialUnknownVariable(node, ConvectionDiffusionDof.UnknownVariable, initialCondition));
             }
             model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
+        }
+
+        private bool CompareResults(double[] solution)
+        {
+            bool ret = true;
+            double tolerance = 1e-5;
+
+            for (var i=0 ; i < Math.Min(expectedNonLinSolution.Length, solution.Length) ; i++)
+            {
+                var error = Math.Abs(solution[i] - expectedNonLinSolution[i]);
+                if ( error > tolerance)
+                {
+                    Console.WriteLine("Wrong result on step "+i+", Error: "+error);
+                    ret = false;
+                    break;
+                }
+            }
+
+            return ret;
         }
 
 
