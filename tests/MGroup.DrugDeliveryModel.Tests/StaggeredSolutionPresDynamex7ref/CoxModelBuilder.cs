@@ -110,7 +110,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         private ConvectionDiffusionDof dofTypeToMonitor = ConvectionDiffusionDof.UnknownVariable;
 
-        private ComsolMeshReader modelReader;
 
         public CoxModelBuilder(ComsolMeshReader modelReader,
             double FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, double T, double initialCondition,
@@ -130,7 +129,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             this.T = T;
             this.initialCondition = initialCondition;
 
-            this.modelReader = modelReader;
+            this.simpleDependentLinearSource = simpleDependentLinearSource;
+            this.independentLinearSource = independentLinearSource;
+            this.ProductionFuncWithoutConstantTerm = ProductionFuncWithoutConstantTerm;
+            this.ProductionFuncWithoutConstantTermDDerivative = ProductionFuncWithoutConstantTermDDerivative;
+
+            this.mesh = modelReader;
             IsoparametricJacobian3D.DeterminantTolerance = 1e-30;
 
             this.convectionDiffusionDirichletBC = convectionDiffusionDirichletBC;
@@ -146,71 +150,68 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         public Model GetModel()
         {
-            // var capacity = 1;
-            // var diffusionCoefficient = Dox;
-            // var convectionCoefficient = FluidSpeed;
-            // var independentSourceCoefficient = independentLinearSource();
-            // var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
+            var capacity = 1;
+            var diffusionCoefficient = Dox;
+            var convectionCoefficient = FluidSpeed;
+            var independentSourceCoefficient = independentLinearSource();
+            var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
 
-            // //Assign equation properties to the domain elements
-            // var convectionDomainCoefficients = new Dictionary<int, double[]>();
-            // var dependentProductionCoefficients = new Dictionary<int, double>();
-            // var independentProductionCoefficients = new Dictionary<int, double>();
+            //Assign equation properties to the domain elements
+            var convectionDomainCoefficients = new Dictionary<int, double[]>();
+            var dependentProductionCoefficients = new Dictionary<int, double>();
+            var independentProductionCoefficients = new Dictionary<int, double>();
 
-            // foreach (var elementConnectivity in mesh.ElementConnectivity)
-            // {
-            //     convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
-            //     dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
-            //     independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
-            // }
+            foreach (var elementConnectivity in mesh.ElementConnectivity)
+            {
+                convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
+                dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
+                independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
+            }
 
-            // //Create Model
-            // var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
-            // var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
-            //     dependentProductionCoefficients, independentProductionCoefficients, capacity,
-            //     ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative);
-            var model = new Model();
+            //Create Model
+            var modelProvider = new GenericComsol3DConvectionDiffusionProductionModelProviderDistributedSpace(mesh);
+            var model = modelProvider.CreateModelFromComsolFile(convectionDomainCoefficients, diffusionCoefficient,
+                dependentProductionCoefficients, independentProductionCoefficients, capacity,
+                ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative);
             return model;
         }
 
-        // public void AddBoundaryConditions(Model model)
-        // {
-        //     BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionDirichletBCsToModel(model, convectionDiffusionDirichletBC, 1e-3);
-        //     BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionICToModel(model, initialCondition);
-        // }
+        public void AddBoundaryConditions(Model model)
+        {
+            BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionDirichletBCsToModel(model, convectionDiffusionDirichletBC, 1e-3);
+            BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionICToModel(model, initialCondition);
+        }
 
-        // public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog
-        // (Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep, int nIncrements)
-        // {
-        //     var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
-        //     var algebraicModel = solverFactory.BuildAlgebraicModel(model);
-        //     var solver = solverFactory.BuildSolver(algebraicModel);
-        //     var problem = new ProblemConvectionDiffusion(model, algebraicModel);
+        public IParentAnalyzer GetAppropriateSolverAnalyzerAndLog(Model model, double TimeStep, double TotalTime)
+        {
+            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
+            var algebraicModel = solverFactory.BuildAlgebraicModel(model);
+            var solver = solverFactory.BuildSolver(algebraicModel);
+            var problem = new ProblemConvectionDiffusion(model, algebraicModel);
 
-        //     var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, problem, numIncrements: 2)
-        //     {
-        //         ResidualTolerance = 1E-3,
-        //         MaxIterationsPerIncrement = 100,
-        //         NumIterationsForMatrixRebuild = 1
-        //     };
+            var loadControlAnalyzerBuilder = new LoadControlAnalyzer.Builder(algebraicModel, solver, problem, numIncrements: 2)
+            {
+                ResidualTolerance = 1E-3,
+                MaxIterationsPerIncrement = 100,
+                NumIterationsForMatrixRebuild = 1
+            };
 
-        //     var loadControlAnalyzer = loadControlAnalyzerBuilder.Build();//new LinearAnalyzer(algebraicModel, solver, problem);
+            var loadControlAnalyzer = loadControlAnalyzerBuilder.Build();//new LinearAnalyzer(algebraicModel, solver, problem);
 
-        //     var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime);
-        //     //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
-        //     var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime);
+            //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
+            var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
 
-        //     // Create a log for the desired dof
-        //     var nodeIdToMonitor =Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-2);
-        //     var watchDofs = new List<(INode node, IDofType dof)>()
-        //     {
-        //         (model.NodesDictionary[nodeIdToMonitor], coxMonitorDOF),
-        //     };
+            // Create a log for the desired dof
+            var watchDofs = new List<(INode node, IDofType dof)>()
+            {
+                (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
+            };
 
-        //     loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
-        //     dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
+            loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
+            dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
 
-        //     return (analyzer, solver, loadControlAnalyzer);
-        // }
+            return dynamicAnalyzer;
+        }
     }
 }
