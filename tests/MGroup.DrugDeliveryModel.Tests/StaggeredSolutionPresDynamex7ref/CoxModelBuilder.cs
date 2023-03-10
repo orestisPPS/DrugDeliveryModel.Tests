@@ -64,18 +64,16 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// Cancer cell density [1]
         /// </summary>
-        private readonly double T; // [cells]
+        private readonly Dictionary<int, double> T; // [cells]
 
         /// <summary>
         /// Term without non-linear term
         /// </summary>
-        private readonly Func<double> simpleDependentLinearSource;
-
         private readonly Func<double> independentLinearSource;
 
-        private readonly Func<double, double> ProductionFuncWithoutConstantTerm;
+        private readonly Dictionary<int, Func<double, double>> ProductionFuncWithoutConstantTerm;
 
-        private readonly Func<double, double> ProductionFuncWithoutConstantTermDDerivative;
+        private readonly Dictionary<int, Func<double, double>> ProductionFuncWithoutConstantTermDDerivative;
 
         private readonly ComsolMeshReader mesh;
 
@@ -112,8 +110,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
         public CoxModelBuilder(ComsolMeshReader modelReader,
-            double FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, double T, double initialCondition,
-            Func<double> simpleDependentLinearSource, Func<double> independentLinearSource, Func<double, double> ProductionFuncWithoutConstantTerm, Func<double, double> ProductionFuncWithoutConstantTermDDerivative,
+            double FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, Dictionary<int, double> T, double initialCondition,
+            Func<double> independentLinearSource, Dictionary<int, Func<double, double>> ProductionFuncWithoutConstantTerm, Dictionary<int, Func<double, double>> ProductionFuncWithoutConstantTermDDerivative,
             int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
             List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
             List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC )
@@ -129,7 +127,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             this.T = T;
             this.initialCondition = initialCondition;
 
-            this.simpleDependentLinearSource = simpleDependentLinearSource;
             this.independentLinearSource = independentLinearSource;
             this.ProductionFuncWithoutConstantTerm = ProductionFuncWithoutConstantTerm;
             this.ProductionFuncWithoutConstantTermDDerivative = ProductionFuncWithoutConstantTermDDerivative;
@@ -154,7 +151,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var diffusionCoefficient = Dox;
             var convectionCoefficient = FluidSpeed;
             var independentSourceCoefficient = independentLinearSource();
-            var dependentSourceCoefficient = 0;//simpleDependentLinearSource();
+            var dependentSourceCoefficient = 0;
 
             //Assign equation properties to the domain elements
             var convectionDomainCoefficients = new Dictionary<int, double[]>();
@@ -196,10 +193,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 NumIterationsForMatrixRebuild = 1
             };
 
-            var loadControlAnalyzer = loadControlAnalyzerBuilder.Build();//new LinearAnalyzer(algebraicModel, solver, problem);
+            var loadControlAnalyzer = loadControlAnalyzerBuilder.Build();
 
             var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime);
-            //var dynamicAnalyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime, bdfOrder: 5);
             var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
 
             // Create a log for the desired dof

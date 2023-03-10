@@ -64,7 +64,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// Cancer cell density [1]
         /// </summary>
-        private const double T = 500d; // [cells]
+        private Dictionary<int, double> T = new Dictionary<int, double>();// 500 [cells]
 
         //---------------------------------------Logging----------------------------------
         /// <summary>
@@ -101,15 +101,27 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         }
 
         //Non - Linear Change here for linear problem
-        public static double ProductionFuncWithoutConstantTerm(double Cox)
+        /*  public static double ProductionFuncWithoutConstantTerm(double Cox)
+            {
+                return -PerOx * Sv * Cox - Aox * T * Cox / (Cox + Kox);
+            }*/
+
+        private Dictionary<int, Func<double, double>> ProductionFuncsWithoutConstantTerm = new Dictionary<int, Func<double, double>>();
+        public Func<double, double> getProductionFuncWithoutConstantTerm(int i)
         {
-            return -PerOx * Sv * Cox - Aox * T * Cox / (Cox + Kox);
+            return (double Cox) => -PerOx * Sv * Cox - Aox * T[i] * Cox / (Cox + Kox);
         }
 
         //Non - Linear Derivative
-        public static double ProductionFuncWithoutConstantTermDDerivative(double Cox)
+/*        public static double ProductionFuncWithoutConstantTermDDerivative(double Cox)
         {
             return -PerOx * Sv - Aox * T / (Cox + Kox) + Aox * T * Cox * Math.Pow(Cox + Kox, -2);
+        }*/
+
+        private Dictionary<int, Func<double, double>> ProductionFuncsWithoutConstantTermDerivative = new Dictionary<int, Func<double, double>>();
+        public Func<double, double> getProductionFuncWithoutConstantTermDerivative(int i)
+        {
+            return (double Cox) => -PerOx * Sv - Aox * T[i] / (Cox + Kox) + Aox * T[i] * Cox * Math.Pow(Cox + Kox, -2); ;
         }
 
         public static double LinearProductionFuncWithoutConstantTerm(double Cox)
@@ -201,6 +213,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         public void SolveEquationCOxNonLinearProduction(string fileName)
         {
             var mesh = new ComsolMeshReader(fileName);
+
+            foreach (var elem in mesh.ElementConnectivity)
+            {
+                T.Add(elem.Key, 500);
+                ProductionFuncsWithoutConstantTerm.Add(elem.Key, getProductionFuncWithoutConstantTerm(elem.Key));
+                ProductionFuncsWithoutConstantTermDerivative.Add(elem.Key, getProductionFuncWithoutConstantTermDerivative(elem.Key));
+            }
             
             var convectionDiffusionDirichletBC = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>()
             {
@@ -212,7 +231,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var nodeIdToMonitor = Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-2);
 
-            var modelBuilder = new CoxModelBuilder(mesh, FluidSpeed, Dox, Aox, Kox, PerOx, Sv, CInitOx, T, CInitOx, simpleDependentLinearSource, independentLinearSource, ProductionFuncWithoutConstantTerm, ProductionFuncWithoutConstantTermDDerivative, nodeIdToMonitor, coxMonitorDOF, convectionDiffusionDirichletBC, convectionDiffusionNeumannBC);
+            var modelBuilder = new CoxModelBuilder(mesh, FluidSpeed, Dox, Aox, Kox, PerOx, Sv, CInitOx, T, CInitOx, independentLinearSource, ProductionFuncsWithoutConstantTerm, ProductionFuncsWithoutConstantTermDerivative, nodeIdToMonitor, coxMonitorDOF, convectionDiffusionDirichletBC, convectionDiffusionNeumannBC);
             var model = modelBuilder.GetModel();
             modelBuilder.AddBoundaryConditions(model);
 
