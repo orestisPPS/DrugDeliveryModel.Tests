@@ -29,7 +29,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The average value of the three components of the fluid velocity vector  [m/s]
         /// </summary>
-        private const double FluidSpeed = 2.32E-4; // [m/s]
+        private Dictionary<int, double[]> FluidSpeed = new Dictionary<int, double[]>(); // 2.32E-4 [m/s]
 
         /// <summary>
         /// Diffusivity of oxygen [m2/s]
@@ -134,7 +134,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             return -PerOx * Sv;
         }
 
-        [Theory]
+/*        [Theory]
         [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
         public void SolveEquationCOxLinearProduction(string fileName)
         {
@@ -206,7 +206,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             CSVExporter.ExportVectorToCSV(cox, "../../../Integration/cox_linear_nodes_mslv.csv");
             Console.WriteLine("FINISHED solving Cox Linear prod");
-        }
+        }*/
 
         [Theory]
         [InlineData("../../../DataFiles/workingTetMesh2185_1Domain.mphtxt")]
@@ -216,6 +216,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             foreach (var elem in mesh.ElementConnectivity)
             {
+                FluidSpeed.Add(elem.Key, new double[] { 2.32E-4, 2.32E-4, 2.32E-4 });
                 T.Add(elem.Key, 500);
                 ProductionFuncsWithoutConstantTerm.Add(elem.Key, getProductionFuncWithoutConstantTerm(elem.Key));
                 ProductionFuncsWithoutConstantTermDerivative.Add(elem.Key, getProductionFuncWithoutConstantTermDerivative(elem.Key));

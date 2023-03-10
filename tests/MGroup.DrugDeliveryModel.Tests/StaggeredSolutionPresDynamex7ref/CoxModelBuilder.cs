@@ -29,7 +29,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The average value of the three components of the fluid velocity vector  [m/s]
         /// </summary>
-        private readonly double FluidSpeed; // [m/s]
+        private readonly Dictionary<int, double[]> FluidSpeed; // [m/s]
 
         /// <summary>
         /// Diffusivity of oxygen [m2/s]
@@ -110,7 +110,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
         public CoxModelBuilder(ComsolMeshReader modelReader,
-            double FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, Dictionary<int, double> T, double initialCondition,
+            Dictionary<int, double[]> FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, Dictionary<int, double> T, double initialCondition,
             Func<double> independentLinearSource, Dictionary<int, Func<double, double>> ProductionFuncWithoutConstantTerm, Dictionary<int, Func<double, double>> ProductionFuncWithoutConstantTermDDerivative,
             int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
             List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
@@ -149,7 +149,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         {
             var capacity = 1;
             var diffusionCoefficient = Dox;
-            var convectionCoefficient = FluidSpeed;
             var independentSourceCoefficient = independentLinearSource();
             var dependentSourceCoefficient = 0;
 
@@ -160,7 +159,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             foreach (var elementConnectivity in mesh.ElementConnectivity)
             {
-                convectionDomainCoefficients[elementConnectivity.Key] = new double[] { convectionCoefficient, convectionCoefficient, convectionCoefficient };
+                convectionDomainCoefficients[elementConnectivity.Key] = FluidSpeed[elementConnectivity.Key];
                 dependentProductionCoefficients[elementConnectivity.Key] = dependentSourceCoefficient;
                 independentProductionCoefficients[elementConnectivity.Key] = independentSourceCoefficient;
             }
