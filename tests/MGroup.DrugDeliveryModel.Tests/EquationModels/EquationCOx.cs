@@ -236,8 +236,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var model = modelBuilder.GetModel();
             modelBuilder.AddBoundaryConditions(model);
 
-            var dynamicAnalyzer = (NewmarkDynamicAnalyzer) modelBuilder.GetAppropriateSolverAnalyzerAndLog(model, TimeStep, TotalTime);
-
+            var analysisData =  modelBuilder.GetAppropriateSolverAnalyzerAndLog(model, TimeStep, TotalTime, 0, 0);
+            var dynamicAnalyzer = (NewmarkDynamicAnalyzer) analysisData.analyzer;
             dynamicAnalyzer.Initialize();
             Console.WriteLine("Solving Cox Non-Linear prod");
             dynamicAnalyzer.Solve();

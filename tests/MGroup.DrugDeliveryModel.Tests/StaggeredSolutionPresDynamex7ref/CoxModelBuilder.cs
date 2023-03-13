@@ -178,7 +178,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             BoundaryAndInitialConditionsUtility.AssignConvectionDiffusionICToModel(model, initialCondition);
         }
 
-        public IParentAnalyzer GetAppropriateSolverAnalyzerAndLog(Model model, double TimeStep, double TotalTime)
+        public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog(Model model, double TimeStep, double TotalTime, int currentStep, int nIncrements)
         {
             var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false };
             var algebraicModel = solverFactory.BuildAlgebraicModel(model);
@@ -194,7 +194,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var loadControlAnalyzer = loadControlAnalyzerBuilder.Build();
 
-            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime);
+            var dynamicAnalyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, problem, loadControlAnalyzer, timeStep: TimeStep, totalTime: TotalTime, false, currentStep: currentStep);
             var dynamicAnalyzer = dynamicAnalyzerBuilder.Build();
 
             // Create a log for the desired dof
@@ -206,7 +206,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             loadControlAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs, algebraicModel);
             dynamicAnalyzer.ResultStorage = new ImplicitIntegrationAnalyzerLog();
 
-            return dynamicAnalyzer;
+            return (dynamicAnalyzer, solver, loadControlAnalyzer);
         }
     }
 }
