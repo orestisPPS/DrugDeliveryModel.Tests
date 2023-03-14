@@ -24,6 +24,7 @@ using MGroup.FEM.ConvectionDiffusion.Tests.Commons;
 using TriangleNet;
 using TriangleNet.Meshing;
 using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
+using System.Reflection.PortableExecutable;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
