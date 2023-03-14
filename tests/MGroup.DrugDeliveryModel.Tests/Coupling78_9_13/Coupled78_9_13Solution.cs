@@ -326,7 +326,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
                 pressureTensorDivergenceAtElementGaussPoints.Add(elem.Key, gpTensorDiv);
             }
-
+/*            foreach (var elem in reader.ElementConnectivity)
+            { CALCULATE vf = kP+ vs
+                vs_gp[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity;
+                vs_gp[elem.Key][0][0] = vs_gp[elem.Key][0][0] * 1000;
+                vs_gp[elem.Key][0][1] = vs_gp[elem.Key][0][1] * 1000;
+                vs_gp[elem.Key][0][2] = vs_gp[elem.Key][0][2] * 1000;
+            }*/
             Dictionary<int, double[]> velocityDivergenceAtElementGaussPoints =
                 new Dictionary<int, double[]>(comsolReader.ElementConnectivity.Count());
             foreach (var elem in comsolReader.ElementConnectivity)

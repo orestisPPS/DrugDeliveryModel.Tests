@@ -53,6 +53,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private Dictionary<int, double> lambda;
         private Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints;
         private Dictionary<int, double[]> div_vs;
+        private Dictionary<int, double[][]> vs_gp;
 
         private double timeStep;
         private double totalTime;
@@ -124,6 +125,14 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             Eq9ModelProvider.AddBoundaryConditions(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
             
+            foreach (var elem in reader.ElementConnectivity)
+            {
+                vs_gp[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity;
+                vs_gp[elem.Key][0][0] = vs_gp[elem.Key][0][0] * 1000;
+                vs_gp[elem.Key][0][1] = vs_gp[elem.Key][0][1] * 1000;
+                vs_gp[elem.Key][0][2] = vs_gp[elem.Key][0][2] * 1000;
+            }
+
             //Create model for eq9 (hyper-elastic material)
             model[2] = CoxModelProvider.GetModel();
             CoxModelProvider.AddBoundaryConditions(model[2]);
