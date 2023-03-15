@@ -31,7 +31,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         const double Sc = 0.1;
 
         private const double timeStep = 0.00001; // in sec
-        const double totalTime = 0.001 ; // in sec
+        const double totalTime = 0.005 ; // in sec
+        //const double totalTime = 0.0001 ; // in sec
         static int incrementsPertimeStep = 1;
         static int currentTimeStep = 0;
 
@@ -454,6 +455,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 for (int j = 0; j < equationModel.ParentAnalyzers.Length; j++)
                 {
                     (equationModel.ParentAnalyzers[j] as NewmarkDynamicAnalyzer).AdvanceStep();
+
                 }
 
                 

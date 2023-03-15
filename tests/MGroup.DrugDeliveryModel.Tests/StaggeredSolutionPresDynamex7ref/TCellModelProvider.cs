@@ -268,6 +268,9 @@ public class TCellModelProvider
 
         var analyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, provider, linearAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, true, currentStep: currentStep);
         analyzerBuilder.SetNewmarkParametersForConstantAcceleration();
+        
+        /*var analyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, provider, linearAnalyzer,
+            timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, 5, currentStep);*/
         var analyzer = analyzerBuilder.Build();
         var watchDofs = new[]
         {

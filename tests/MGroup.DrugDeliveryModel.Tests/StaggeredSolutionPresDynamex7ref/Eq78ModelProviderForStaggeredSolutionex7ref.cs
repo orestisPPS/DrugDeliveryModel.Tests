@@ -167,6 +167,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             var analyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, false, currentStep: currentStep);
             analyzerBuilder.SetNewmarkParametersForConstantAcceleration();
+            /*var analyzerBuilder = new BDFDynamicAnalyzer.Builder(algebraicModel, provider, loadControlAnalyzer,
+                timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, 5);*/
             var analyzer = analyzerBuilder.Build();
             var watchDofs = new[]
             {
