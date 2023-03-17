@@ -1,4 +1,3 @@
-/*
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +21,9 @@ using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
 using MGroup.FEM.ConvectionDiffusion.Tests.Commons;
 using BC = MGroup.DrugDeliveryModel.Tests.Commons.BoundaryAndInitialConditionsUtility.BoundaryConditionCase;
 using MGroup.DrugDeliveryModel.Tests.PreliminaryModels;
+using MGroup.FEM.ConvectionDiffusion.Isoparametric;
+using MGroup.MSolve.Numerics.Integration.Quadratures;
+using MGroup.MSolve.Numerics.Interpolation;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
@@ -66,7 +68,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         //---------------------------------------Time Discretization Specs------------------------------
         //private const double TotalTime = 1E-2;
-        private const double TotalTime = 20e-5;
+        private const double TotalTime = 1E-2;
 
         /// <summary>
         /// For increased accuracy use time-step of order 1E-5
@@ -76,8 +78,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// Simplified version of the production term without non-linear term
         /// </summary>
-        private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
-        //private readonly Func<double> dependantSourceCoefficient =() => 0d;
+        //private readonly Func<double> dependantSourceCoefficient =() => (K1 * Cox) / (K2 + Cox);
+        private readonly Func<double> dependantSourceCoefficient =() => 0d;
 
         private static int nGaussPoints = 1;
 
@@ -129,16 +131,17 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 dummyFieldCOx.Add(elem.Key, Cox);
             }
 
-            Dictionary<int, double[]> dummyVelocityDivergenceAtElementGaussPoints =
-                new Dictionary<int, double[]>(comsolReader.ElementConnectivity.Count());
-            foreach (var elem in comsolReader.ElementConnectivity)
+            Dictionary<int, double[][]> dummyVelocityDivergenceAtElementGaussPoints =
+                new Dictionary<int, double[][]>(comsolReader.ElementConnectivity.Count());
+            foreach (var element in comsolReader.ElementConnectivity)
             {
-                var velocityDiv = new double[nGaussPoints];
-                for (int i1 = 0; i1 < nGaussPoints; i1++)
-                {
-                    velocityDiv[i1] = SolidSpeed;
-                }
-                dummyVelocityDivergenceAtElementGaussPoints.Add(elem.Key, velocityDiv);
+                double[][] initialVelocity = new double[nGaussPoints][];
+                initialVelocity[0] = new double[3];
+                initialVelocity[0][0] = 0d;
+                initialVelocity[0][1] = 0d;
+                initialVelocity[0][2] = 0d;
+
+                dummyVelocityDivergenceAtElementGaussPoints.Add(element.Key, initialVelocity);
             }
 
             var nodeIdToMonitor = Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-3);
@@ -147,17 +150,31 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             var DirichletBCsList =
             new List<(BC, ConvectionDiffusionDof[], double[][], double[])>()
             {
-                (BC.TopRightBackDiriclet, constrainedDofType, new double[2][]{new double[3] {0,0,0},new double[3] {0.1,0.1,0.1}}, new double[]{500d}),
-
-
+                (BC.TopRightBackDiriclet, constrainedDofType, new double[3][]{new double[3] {0.1,0.1,0.1},new double[3] {0.1,0.1,0.1}, new double[3] {0.1,0.1,0.1}}, new double[]{500d}),
+                
             };
 
             var emptyNeumannBC = new List<(BC, ConvectionDiffusionDof[], double[][], double[])>();
+            
+            foreach (var element in mesh.ElementConnectivity)
+            {
+                var elementNodes = element.Value.Item2;
+                var elementGpVelocities = new double[nGaussPoints][];
+                elementGpVelocities[0] = GetVelocityVectorFromCoordinates(elementNodes);
+                dummyVelocityDivergenceAtElementGaussPoints[element.Key] = elementGpVelocities;
+            }
+            
 
             var modelBuilder = new TCellModelProvider(K1, K2, dummyFieldCOx,  dummyVelocityDivergenceAtElementGaussPoints, comsolReader,
                 coxMonitorDOF, nodeIdToMonitor, DirichletBCsList, emptyNeumannBC, Tinitial);
 
             var model = modelBuilder.GetModel();
+            
+            //Add the spatially distributed velocity field
+
+
+            
+            
             modelBuilder.AddBoundaryConditions(model);
             (var analyzer, var solver, var nlAnalyzers) =
                 modelBuilder.GetAppropriateSolverAnalyzerAndLog(model, TimeStep, TotalTime, 0);
@@ -174,7 +191,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 var timeStepResultsLog = ((NewmarkDynamicAnalyzer)analyzer).ResultStorage.Logs[i1];
                 tCells[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), coxMonitorDOF];
             }
-            Assert.True(ResultChecker.CheckResults(tCells, expected_Tc_values(), 1E-6));
+            //Assert.True(ResultChecker.CheckResults(tCells, expected_Tc_values(), 1E-6));
 
 
             //Assign Boundary Conditions
@@ -224,7 +241,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 tCells[i1] = ((DOFSLog)timeStepResultsLog).DOFValues[model.GetNode(nodeIdToMonitor), coxMonitorDOF];
             }
             Assert.True(ResultChecker.CheckResults(tCells, expected_Tc_values(), 1E-6));
-            #1#
+            */
             CSVExporter.ExportVectorToCSV(tCells, "../../../Integration/Tc_nodes_mslv.csv");
         }
 
@@ -276,6 +293,26 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             }
             model.InitialConditions.Add(new ConvectionDiffusionInitialConditionSet(initialConditions, new DomainInitialUnknownVariable[]{ }));
         }
+        
+        private double[] GetVelocityVectorFromCoordinates(Node[] elementNodes)
+        {
+            var interpolation = InterpolationTet4.UniqueInstance;
+            var quadrature = TetrahedronQuadrature.Order1Point1;
+            var shapeFunctionValues = interpolation.EvaluateFunctionsAt(quadrature.IntegrationPoints[0]);
+            var gpCoordinates = new double[3]; //{ dphi_dksi, dphi_dheta, dphi_dzeta}
+            for (var i1 = 0; i1 < shapeFunctionValues.Length; i1++)
+            {
+                gpCoordinates[0] += shapeFunctionValues[i1] * elementNodes[i1].X;
+                gpCoordinates[1] += shapeFunctionValues[i1] * elementNodes[i1].Y;
+                gpCoordinates[2] += shapeFunctionValues[i1] * elementNodes[i1].Z;
+            }
+            var spatiallyDistributedVelocityVector = new double[3];
+            spatiallyDistributedVelocityVector[0] = 0d;
+            spatiallyDistributedVelocityVector[1] = 0d;
+            spatiallyDistributedVelocityVector[2] = - 50d * gpCoordinates[2];
+            return spatiallyDistributedVelocityVector;
+        }
+        
         public static double[] expected_Tc_values()
         {
             return new double[] {
@@ -303,4 +340,3 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         }
     }
 }
-*/

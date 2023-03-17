@@ -27,7 +27,7 @@ public class TCellModelProvider
 
     private Dictionary<int, double> DomainCOx { get; }
 
-    private Dictionary<int, double[][]> SolidVelocity { get; }
+    public Dictionary<int, double[][]> SolidVelocity { get; set; }
     private ComsolMeshReader Mesh { get; }
     private ConvectionDiffusionDof MonitorDOFType { get; }
     private int MonitorNodeId { get; }

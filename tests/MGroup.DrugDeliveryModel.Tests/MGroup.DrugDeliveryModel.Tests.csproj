@@ -37,5 +37,6 @@
   <ItemGroup>
     <Folder Include="StaggeredSolutionPresDynamex8\results1\" />
     <Folder Include="StaggeredSolutionPresDynamex7\results1\" />
+    <Folder Include="StaggeredTCell" />
   </ItemGroup>
 </Project>
