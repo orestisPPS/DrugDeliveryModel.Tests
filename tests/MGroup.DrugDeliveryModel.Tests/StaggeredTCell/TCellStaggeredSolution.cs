@@ -80,7 +80,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             {(new double[]{ 0.04930793848882013,0.04994681648346263,0.075 }, "CornerNodeTranslationZ.txt",StructuralDof.TranslationZ,-1, new double[0])};
 
         //static double[] tCellMonitorNodeCoords = new double[] { 0.055, 0.0559, 0.07366 };
-        static double[] tCellMonitorNodeCoords = { 0.06, 0.06, 0.06 };
+        static double[] tCellMonitorNodeCoords = { 0.0, 0.09, 0.09 };
 
         private static int tCellMonitorID;
 
@@ -123,7 +123,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 new Dictionary<int, double>(comsolReader.ElementConnectivity.Count());
             foreach (var elem in comsolReader.ElementConnectivity)
             {
-                dummyFieldCOx.Add(elem.Key, Cox);
+                //dummyFieldCOx.Add(elem.Key, Cox);
+                dummyFieldCOx.Add(elem.Key, 0d);
             }
 
 

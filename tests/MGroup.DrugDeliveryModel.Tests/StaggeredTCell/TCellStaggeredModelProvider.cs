@@ -97,7 +97,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 
                 var elementNodes = element.Value.Item2;
                 var elementGpVelocities = new double[1][];
-                elementGpVelocities[0] = GetVelocityVectorFromCoordinates(elementNodes);
+                //elementGpVelocities[0] = GetVelocityVectorFromCoordinates(elementNodes);
+                //elementGpVelocities[0] = GetVelocityVectorFromTime(elementNodes, CurrentTimeStep, timeStep);
+                elementGpVelocities[0] = GetVelocityVectorFromTimeAndCoordinates(elementNodes, CurrentTimeStep, timeStep);
                 SolidVelocityAtElementGaussPoints[element.Key] = elementGpVelocities;
                 
             }
@@ -131,7 +133,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 {
                     var elementNodes = element.Value.Item2;
                     var elementGpVelocities = new double[1][];
-                    elementGpVelocities[0] = GetVelocityVectorFromCoordinates(elementNodes);
+                    //elementGpVelocities[0] = GetVelocityVectorFromCoordinates(elementNodes);
+                    //elementGpVelocities[0] = GetVelocityVectorFromTime(elementNodes, CurrentTimeStep, timeStep);
+                    elementGpVelocities[0] = GetVelocityVectorFromTimeAndCoordinates(elementNodes, CurrentTimeStep, timeStep);
                     SolidVelocityAtElementGaussPoints[element.Key] = elementGpVelocities;
                     
                     // SolidVelocityAtElementGaussPoints[elem.Key][0][0] = -5d;
@@ -183,6 +187,44 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             spatiallyDistributedVelocityVector[1] = 0d;
             spatiallyDistributedVelocityVector[2] = - 50d * gpCoordinates[2];
             return spatiallyDistributedVelocityVector;
+        }
+        
+        private double[] GetVelocityVectorFromTime(Node[] elementNodes, int currentTimeStep, double timeStep)
+        {
+            var interpolation = InterpolationTet4.UniqueInstance;
+            var quadrature = TetrahedronQuadrature.Order1Point1;
+            var shapeFunctionValues = interpolation.EvaluateFunctionsAt(quadrature.IntegrationPoints[0]);
+            var gpCoordinates = new double[3]; //{ dphi_dksi, dphi_dheta, dphi_dzeta}
+            for (var i1 = 0; i1 < shapeFunctionValues.Length; i1++)
+            {
+                gpCoordinates[0] += shapeFunctionValues[i1] * elementNodes[i1].X;
+                gpCoordinates[1] += shapeFunctionValues[i1] * elementNodes[i1].Y;
+                gpCoordinates[2] += shapeFunctionValues[i1] * elementNodes[i1].Z;
+            }
+            var timeDistributedVelocityVector = new double[3];
+            timeDistributedVelocityVector[0] = 0d;
+            timeDistributedVelocityVector[1] = 0d;
+            timeDistributedVelocityVector[2] = - 500d * (currentTimeStep * timeStep);
+            return timeDistributedVelocityVector;
+        }
+        
+        private double[] GetVelocityVectorFromTimeAndCoordinates(Node[] elementNodes, int currentTimeStep, double timeStep)
+        {
+            var interpolation = InterpolationTet4.UniqueInstance;
+            var quadrature = TetrahedronQuadrature.Order1Point1;
+            var shapeFunctionValues = interpolation.EvaluateFunctionsAt(quadrature.IntegrationPoints[0]);
+            var gpCoordinates = new double[3]; //{ dphi_dksi, dphi_dheta, dphi_dzeta}
+            for (var i1 = 0; i1 < shapeFunctionValues.Length; i1++)
+            {
+                gpCoordinates[0] += shapeFunctionValues[i1] * elementNodes[i1].X;
+                gpCoordinates[1] += shapeFunctionValues[i1] * elementNodes[i1].Y;
+                gpCoordinates[2] += shapeFunctionValues[i1] * elementNodes[i1].Z;
+            }
+            var timeDistributedVelocityVector = new double[3];
+            timeDistributedVelocityVector[0] = - 5000d * ((currentTimeStep * timeStep) * gpCoordinates[0]);
+            timeDistributedVelocityVector[1] = - 5000d * ((currentTimeStep * timeStep) * gpCoordinates[1]);
+            timeDistributedVelocityVector[2] = - 5000d * ((currentTimeStep * timeStep) * gpCoordinates[2]) ;
+            return timeDistributedVelocityVector;
         }
     }
 }
