@@ -18,6 +18,7 @@ using Xunit;
 using MGroup.Constitutive.ConvectionDiffusion;
 using MGroup.Constitutive.ConvectionDiffusion.BoundaryConditions;
 using MGroup.Constitutive.ConvectionDiffusion.InitialConditions;
+using System.Diagnostics;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
@@ -137,7 +138,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             };
             var convectionDiffusionNeumannBC = new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])>();
 
-            var nodeIdToMonitor = Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-2);
+            var nodeIdToMonitor = Utilities.FindNodeIdFromNodalCoordinates(mesh.NodesDictionary, monitorNodeCoords, 1e-4);
 
             var modelBuilder = new CoxModelBuilder(mesh, FluidSpeed, Dox, Aox, Kox, PerOx, Sv, CInitOx, T, CInitOx, independentLinearSource, ProductionFuncsWithoutConstantTerm, ProductionFuncsWithoutConstantTermDerivative, nodeIdToMonitor, coxMonitorDOF, convectionDiffusionDirichletBC, convectionDiffusionNeumannBC);
             var model = modelBuilder.GetModel();
@@ -171,9 +172,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             for (var i=0 ; i < Math.Min(expectedNonLinSolution.Length, solution.Length) ; i++)
             {
                 var error = Math.Abs(solution[i] - expectedNonLinSolution[i]);
+                Debug.WriteLine("\n======\nStep " + i);
+                Debug.WriteLine("\tExpected   :" + expectedNonLinSolution[i]);
+                Debug.WriteLine("\tCalculated :" + solution[i]);
+                Debug.WriteLine("\tError      :" + error);
                 if ( error > tolerance)
                 {
-                    Console.WriteLine("Wrong result on step "+i+", Error: "+error);
+                    Debug.WriteLine("Wrong result on step "+i+", Error: "+error);
                     ret = false;
                     break;
                 }

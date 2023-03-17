@@ -53,7 +53,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private Dictionary<int, double> lambda;
         private Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints;
         private Dictionary<int, double[]> div_vs;
-        private Dictionary<int, double[][]> vs_gp;
+        private Dictionary<int, double[]> FluidSpeed;
+        private double kth;
 
         private double timeStep;
         private double totalTime;
@@ -63,7 +64,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         public Coupled78_9_13Model(Eq78ModelProviderForStaggeredSolutionex7ref eq78ModelProvider, CoxModelBuilder coxModelProvider,
                                      Eq9ModelProviderForStaggeredSolutionEx7Ref eq9ModelProvider, ComsolMeshReader comsolReader,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
-            Dictionary<int, double[]> div_vs, double timeStep, double totalTime, int incrementsPerStep)
+            Dictionary<int, double[]> div_vs, Dictionary<int, double[]> FluidSpeed, double kth, double timeStep, double totalTime, int incrementsPerStep)
         {
             Eq9ModelProvider = eq9ModelProvider;
             CoxModelProvider = coxModelProvider;
@@ -82,6 +83,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             this.pressureTensorDivergenceAtElementGaussPoints = pressureTensorDivergenceAtElementGaussPoints;
             this.lambda = lambda;
             this.div_vs = div_vs;
+            this.FluidSpeed = FluidSpeed;
+            this.kth = kth;
 
             this.timeStep = timeStep;
             this.totalTime  = totalTime;
@@ -112,7 +115,19 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             {
                 div_vs[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocityDivergence;
             }
-            
+
+            foreach (var elem in reader.ElementConnectivity)
+            {//CALCULATE vf = kP + vs
+                //vs
+                FluidSpeed[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0];
+                FluidSpeed[elem.Key][0] = FluidSpeed[elem.Key][0];
+                FluidSpeed[elem.Key][1] = FluidSpeed[elem.Key][1];
+                FluidSpeed[elem.Key][2] = FluidSpeed[elem.Key][2];
+                //vs+kp
+                FluidSpeed[elem.Key][0] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][0] * kth;
+                FluidSpeed[elem.Key][1] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][1] * kth;
+                FluidSpeed[elem.Key][2] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][2] * kth;
+            }
             model = new Model[3];
 
             //Create model for eq78 (fluid pressure)
@@ -124,16 +139,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             model[1] = Eq9ModelProvider.GetModel();
             Eq9ModelProvider.AddBoundaryConditions(model[1]);
             (analyzers[1], solvers[1], nlAnalyzers[1]) = Eq9ModelProvider.GetAppropriateSolverAnalyzerAndLog(model[1], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
-            
-            foreach (var elem in reader.ElementConnectivity)
-            {
-                vs_gp[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity;
-                vs_gp[elem.Key][0][0] = vs_gp[elem.Key][0][0] * 1000;
-                vs_gp[elem.Key][0][1] = vs_gp[elem.Key][0][1] * 1000;
-                vs_gp[elem.Key][0][2] = vs_gp[elem.Key][0][2] * 1000;
-            }
 
-            //Create model for eq9 (hyper-elastic material)
+            //Create model for eq13 (cox)
             model[2] = CoxModelProvider.GetModel();
             CoxModelProvider.AddBoundaryConditions(model[2]);
             (analyzers[2], solvers[2], nlAnalyzers[2]) = CoxModelProvider.GetAppropriateSolverAnalyzerAndLog(model[2], timeStep, totalTime, CurrentTimeStep, incrementsPerStep);
@@ -164,6 +171,18 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 foreach (var elem in reader.ElementConnectivity)
                 {
                     div_vs[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocityDivergence;
+                }
+                foreach (var elem in reader.ElementConnectivity)
+                {//CALCULATE vf = kP + vs
+                 //vs
+                    FluidSpeed[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0];
+                    FluidSpeed[elem.Key][0] = FluidSpeed[elem.Key][0];
+                    FluidSpeed[elem.Key][1] = FluidSpeed[elem.Key][1];
+                    FluidSpeed[elem.Key][2] = FluidSpeed[elem.Key][2];
+                    //vs+kp
+                    FluidSpeed[elem.Key][0] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][0] * kth;
+                    FluidSpeed[elem.Key][1] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][1] * kth;
+                    FluidSpeed[elem.Key][2] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][2] * kth;
                 }
             }
 

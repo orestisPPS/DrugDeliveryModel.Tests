@@ -33,7 +33,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         const double Sc = 0.1;
 
         private const double timeStep = 0.00001; // in sec
-        const double totalTime = 0.0001; // in sec
+        const double totalTime = 0.001; // in sec
         static int incrementsPertimeStep = 1;
         static int currentTimeStep = 0;
 
@@ -206,7 +206,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// The average value of the three components of the fluid velocity vector  [m/s]
         /// </summary>
         private Dictionary<int, double[]> FluidSpeed = new Dictionary<int, double[]>(); // 2.32E-4 [m/s]
-        const double FluidSpeedInit = 2.32E-4;
+        const double FluidSpeedInit = 0;//2.32E-4;
+
+        static double SvCox = 0; // 1/(m)
         /// <summary>
         /// Diffusivity of oxygen [m2/s]
         /// </summary>
@@ -247,21 +249,26 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The coordinates of the monitored node
         /// </summary>
-        private double[] coxMonitorNodeCoords = { 0.05, 0.05, 0.05 };
+        private double[] coxMonitorNodeCoords = { 0.09, 0.0, 0.05 };
+        private double[] vfMonitorGpCoords = { 0.09, 0.09, 0.09 };
         private static int coxMonitorID;
+        private static int vfMonitorGpID;
+        private List<double[]> vf_calculated = new List<double[]>();
 
-        private readonly Func<double> independentLinearSource = () => PerOx * Sv * 0.2d;
+        private readonly Func<double> independentLinearSource = () => PerOx * SvCox * 0.2d;
 
         private Dictionary<int, Func<double, double>> ProductionFuncsWithoutConstantTerm = new Dictionary<int, Func<double, double>>();
         public Func<double, double> getProductionFuncWithoutConstantTerm(int i)
         {
-            return (double Cox) => -PerOx * Sv * Cox - Aox * T[i] * Cox / (Cox + Kox);
+            //return (double Cox) => -PerOx * Sv * Cox - Aox * T[i] * Cox / (Cox + Kox);
+            return (double Cox) => -PerOx * SvCox * Cox; //Linear
         }
 
         private Dictionary<int, Func<double, double>> ProductionFuncsWithoutConstantTermDerivative = new Dictionary<int, Func<double, double>>();
         public Func<double, double> getProductionFuncWithoutConstantTermDerivative(int i)
         {
-            return (double Cox) => -PerOx * Sv - Aox * T[i] / (Cox + Kox) + Aox * T[i] * Cox * Math.Pow(Cox + Kox, -2); ;
+            //return (double Cox) => -PerOx * Sv - Aox * T[i] / (Cox + Kox) + Aox * T[i] * Cox * Math.Pow(Cox + Kox, -2);
+            return (double Cox) => -PerOx * SvCox; //Linear
         }
 
         #endregion
@@ -326,13 +333,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
                 pressureTensorDivergenceAtElementGaussPoints.Add(elem.Key, gpTensorDiv);
             }
-/*            foreach (var elem in reader.ElementConnectivity)
-            { CALCULATE vf = kP+ vs
-                vs_gp[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity;
-                vs_gp[elem.Key][0][0] = vs_gp[elem.Key][0][0] * 1000;
-                vs_gp[elem.Key][0][1] = vs_gp[elem.Key][0][1] * 1000;
-                vs_gp[elem.Key][0][2] = vs_gp[elem.Key][0][2] * 1000;
-            }*/
             Dictionary<int, double[]> velocityDivergenceAtElementGaussPoints =
                 new Dictionary<int, double[]>(comsolReader.ElementConnectivity.Count());
             foreach (var elem in comsolReader.ElementConnectivity)
@@ -355,7 +355,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             pressureMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, pressureMonitorNodeCoords , 1e-2);
             //pressureMonitorID = structuralMonitorID;
             coxMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, coxMonitorNodeCoords, 1e-2);
-
 
             var p_i = new double[(int)(totalTime / timeStep)];
 
@@ -404,7 +403,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 structuralMonitorID, eq9dofTypeToMonitor, structuralNeumannBC, structuralDirichletBC);
 
             //Create Model For Oxygen
-            var coxModel = new CoxModelBuilder(comsolReader, FluidSpeed, Dox, Aox, Kox, PerOx, Sv, CInitOx, T, CInitOx, 
+            var coxModel = new CoxModelBuilder(comsolReader, FluidSpeed, Dox, Aox, Kox, PerOx, SvCox, CInitOx, T, CInitOx, 
                                             independentLinearSource, ProductionFuncsWithoutConstantTerm, ProductionFuncsWithoutConstantTermDerivative,
                                             coxMonitorID, coxMonitorDOF, convectionDiffusionDirichletBC, convectionDiffusionNeumannBC);
 
@@ -412,7 +411,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
 
             var equationModel = new Coupled78_9_13Model(eq78Model, coxModel, eq9Model, comsolReader, lambda,
-                pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, timeStep,
+                pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, FluidSpeed, k_th_tumor, timeStep,
                 totalTime, incrementsPertimeStep);
 
             var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers,
@@ -428,6 +427,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 //TODO Orestis: implement here one for loop for each "node Type" requested  log using the following commands
                 monitoredGPVelocity_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsVelocity, 1e-1); //Todo Orestis delete these commands1
                 monitoredGPpressureGrad_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsPresGradient, 1e-1);
+                vfMonitorGpID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[2], vfMonitorGpCoords, 1e-1);
+
                 //nodal logs
                 p_i[currentTimeStep] =((DOFSLog)equationModel.ParentAnalyzers[0].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[0].GetNode(pressureMonitorID), eq7n8dofTypeToMonitor];
                 //p_i[currentTimeStep] = 0d;
@@ -448,7 +449,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 gp_div_v_OverTime[currentTimeStep]= ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocityDivergence[0];
 
                 coxResults[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[2].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[2].GetNode(coxMonitorID), coxMonitorDOF];
-
+                vf_calculated.Add(FluidSpeed[vfMonitorGpID]);
                 //model maximus (DO NOT ERASE)
                 //modelMaxVelDivOverTime[currentTimeStep] = velocityDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0])).ToArray().Max();
                 //modelMax_dP_dxOverTime[currentTimeStep] = pressureTensorDivergenceAtElementGaussPoints.Select(x => Math.Abs(x.Value[0][0])).ToArray().Max();
@@ -482,6 +483,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 //Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
             }
 
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(dp_dxi), "../../../Coupling78_9_13/results/dp_dxi_GP_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(displacements), "../../../Coupling78_9_13/results/displacements_nodes_mslv.csv");
+            CSVExporter.ExportVectorToCSV(p_i, "../../../Coupling78_9_13/results/pi_nodes_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(divVelocity), "../../../Coupling78_9_13/results/dut_dxi_GP_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(new List<double[]>() { coxResults}), "../../../Coupling78_9_13/results/cox_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(vf_calculated), "../../../Coupling78_9_13/results/vf_cmsl.csv");
+
             Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1E-6));
             Assert.True(ResultChecker.CheckResults(p_i, expectedPressurevalues(), 1E-6));
             Assert.True(ResultChecker.CheckResults(gp_dut_dx_OverTime, expected_dutdx_values(), 1E-6));
@@ -491,8 +499,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             Assert.True(ResultChecker.CheckResults(gp_dP_dx_OverTime, expected_dpdx_values(), 1E-6));
             Assert.True(ResultChecker.CheckResults(gp_dP_dy_OverTime, expected_dpdy_values(), 1E-6));
             Assert.True(ResultChecker.CheckResults(gp_dP_dz_Overtime, expected_dpdz_values(), 1E-6));
-            //TODO: Also check cox results bruh
-            //Assert.True(ResultChecker.CheckResults(coxResults, expectedCoxNonLinSolution(), 1E-5));
+            Assert.True(ResultChecker.CheckResults(coxResults, expectedCox(), 1E-1));
 
 
             double pr = 100;
@@ -521,12 +528,117 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
             //var path = outputPath+"dp_dxi_mslv.csv";
-            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(dp_dxi), "../../../StaggeredSolutionPresDynamex7ref/dp_dxi_GP_mslv.csv");
-            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(displacements), "../../../StaggeredSolutionPresDynamex7ref/displacements_nodes_mslv.csv");
-            CSVExporter.ExportVectorToCSV(p_i, "../../../StaggeredSolutionPresDynamex7ref/pi_nodes_mslv.csv");
-            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(divVelocity), "../../../StaggeredSolutionPresDynamex7ref/dut_dxi_GP_mslv.csv");
 
         }
+
+        static double[] expectedCox()
+        {
+            return new double[]
+            {
+                0.0,
+                1.170204359186622e-08,
+                3.4570848140523114e-08,
+                6.225601204495958e-08,
+                8.608086597137913e-08,
+                9.686224086772193e-08,
+                8.581659700450394e-08,
+                4.497588499747337e-08,
+                -3.265279028121877e-08,
+                -1.5305625845604175e-07,
+/*                -3.212450237753937e-07,
+                -5.413081587338103e-07,
+                -8.164754991650073e-07,
+                -1.1491786627453075e-06,
+                -1.5411072709959789e-06,
+                -1.9932591861453542e-06,
+                -2.5059847270519494e-06,
+                -3.0790253258415123e-06,
+                -3.711547261089456e-06,
+                -4.402171127147807e-06,
+                -5.148997659910326e-06,
+                -5.949630478759389e-06,
+                -6.801196241368415e-06,
+                -7.700362649817535e-06,
+                -8.643354694856509e-06,
+                -9.625969480152413e-06,
+                -1.0643589928909174e-05,
+                -1.16911976403368e-05,
+                -1.2763385132388356e-05,
+                -1.3854367679219798e-05,
+                -1.4957994926515588e-05,
+                -1.6067762444996685e-05,
+                -1.7176823361648006e-05,
+                -1.8278000189476375e-05,
+                -1.936379695959752e-05,
+                -2.04264117442482e-05,
+                -2.1457749645542068e-05,
+                -2.244943631247986e-05,
+                -2.339283203766632e-05,
+                -2.4279046475297077e-05,
+                -2.5098954013120333e-05,
+                -2.5843209823155e-05,
+                -2.6502266608803707e-05,
+                -2.7066392059629043e-05,
+                -2.7525687019297424e-05,
+                -2.787010436699178e-05,
+                -2.8089468607896937e-05,
+                -2.8173496164078403e-05,
+                -2.8111816353174065e-05,
+                -2.789399303873408e-05,
+                -2.75095469327707e-05,
+                -2.6947978528065367e-05,
+                -2.6198791634939105e-05,
+                -2.5251517494633797e-05,
+                -2.409573943898603e-05,
+                -2.272111806384629e-05,
+                -2.1117416881579355e-05, 
+                -1.9274528415990708e-05, 
+                -1.7182500701181277e-05, 
+                -1.4831564144116403e-05, 
+                -1.2212158709044051e-05, 
+                -9.314961380403575e-06, 
+                -6.130913859454398e-06, 
+                -2.6512504485408324e-06, 
+                1.132473924316709e-06, 
+                5.228355588917331e-06, 
+                9.64411397389559e-06, 
+                1.4387063455639645e-05, 
+                1.946408526631728e-05, 
+                2.4881599512947062e-05, 
+                3.064553736013198e-05, 
+                3.676131342961979e-05, 
+                4.323379847030045e-05, 
+                5.006729235264707e-05, 
+                5.72654974418942e-05, 
+                6.483149240442061e-05, 
+                7.276770650191279e-05, 
+                8.107589442789177e-05, 
+                8.975711174111907e-05, 
+                9.88116909502036e-05, 
+                0.00010823921830349637, 
+                0.00011803851133800888, 
+                0.000128207597240658, 
+                0.00013874369207462242, 
+                0.00014964318092300927,
+                0.0001609015990013394, 
+                0.00017251361378959422, 
+                0.00018447300823374915, 
+                0.00019677266506577064, 
+                0.00020940455229010067, 
+                0.00022235970988354397, 
+                0.00023562823775436208, 
+                0.00024919928500516126, 
+                0.0002630610405428912, 
+                0.0002772007250778919, 
+                0.0002916045845525636, 
+                0.00030625788503870665, 
+                0.0003211449091410782, 
+                0.000336248953943072, 
+                0.00035155233052878125*/
+            };
+        }
+
+
         public static double[] expectedDisplacments()
         {
             return new double[] {
