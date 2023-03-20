@@ -82,7 +82,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static List<(BC, StructuralDof[], double[][], double[])> structuralNeumannBC =
             new List<(BC, StructuralDof[], double[][], double[])>()
             {
-                (BC.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{- 1E-4 / 4d})
+                (BC.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 / 4d})
             };
 
         #endregion

@@ -118,15 +118,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             foreach (var elem in reader.ElementConnectivity)
             {//CALCULATE vf = kP + vs
-                //vs
-                FluidSpeed[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0];
-                FluidSpeed[elem.Key][0] = FluidSpeed[elem.Key][0];
-                FluidSpeed[elem.Key][1] = FluidSpeed[elem.Key][1];
-                FluidSpeed[elem.Key][2] = FluidSpeed[elem.Key][2];
-                //vs+kp
-                FluidSpeed[elem.Key][0] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][0] * kth;
-                FluidSpeed[elem.Key][1] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][1] * kth;
-                FluidSpeed[elem.Key][2] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][2] * kth;
+                FluidSpeed[elem.Key] = new double[3]
+                {
+                    (-(pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][0] * kth) + ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0][0]) * 1000,
+                    (-(pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][1] * kth) + ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0][1]) * 1000,
+                    (-(pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][2] * kth) + ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0][2]) * 1000,
+                };
             }
             model = new Model[3];
 
@@ -175,14 +172,12 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 foreach (var elem in reader.ElementConnectivity)
                 {//CALCULATE vf = kP + vs
                  //vs
-                    FluidSpeed[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0];
-                    FluidSpeed[elem.Key][0] = FluidSpeed[elem.Key][0];
-                    FluidSpeed[elem.Key][1] = FluidSpeed[elem.Key][1];
-                    FluidSpeed[elem.Key][2] = FluidSpeed[elem.Key][2];
-                    //vs+kp
-                    FluidSpeed[elem.Key][0] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][0] * kth;
-                    FluidSpeed[elem.Key][1] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][1] * kth;
-                    FluidSpeed[elem.Key][2] += pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][2] * kth;
+                     FluidSpeed[elem.Key] = new double[3]
+                     {
+                         (-(pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][0] * kth) + ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0][0]) * 1000,
+                         (-(pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][1] * kth) + ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0][1]) * 1000,
+                         (-(pressureTensorDivergenceAtElementGaussPoints[elem.Key][0][2] * kth) + ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0][2]) * 1000,
+                     };
                 }
             }
 

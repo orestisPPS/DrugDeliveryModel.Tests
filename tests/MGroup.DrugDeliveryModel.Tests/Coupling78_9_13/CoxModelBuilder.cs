@@ -29,7 +29,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         /// <summary>
         /// The average value of the three components of the fluid velocity vector  [m/s]
         /// </summary>
-        private readonly Dictionary<int, double[]> FluidSpeed; // [m/s]
+        public readonly Dictionary<int, double[]> FluidSpeed; // [m/s]
 
         /// <summary>
         /// Diffusivity of oxygen [m2/s]
