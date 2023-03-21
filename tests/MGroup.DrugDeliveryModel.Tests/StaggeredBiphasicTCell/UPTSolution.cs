@@ -30,8 +30,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
     {
         const double Sc = 0.1;
 
-        private const double timeStep = 0.00001; // in sec
-        const double totalTime = 0.005 ; // in sec
+        private const double timeStep = 1E-5; // in sec
+        const double totalTime = 1E-4; // in sec
         //const double totalTime = 0.0001 ; // in sec
         static int incrementsPertimeStep = 1;
         static int currentTimeStep = 0;
@@ -82,7 +82,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static List<(BC, StructuralDof[], double[][], double[])> structuralNeumannBC =
             new List<(BC, StructuralDof[], double[][], double[])>()
             {
-                (BC.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 / 4d})
+                (BC.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{-1E-4 / 4d})
             };
 
         #endregion
@@ -108,7 +108,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         {(new double[]{ 0.05301208792514899, 0.053825572057669926, 0.052065045951539365 }, "CenterNodeGradients",-1, new double[3][])};
 
         static double[] monitoredGPCoordsVelocity = new double[] { 0.09, 0.09, 0.09 };
-        static double[] monitoredGPCoordsDivVelocity = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+        static double[] monitoredGPCoordsDivVelocity = new double[] { 0.09, 0.09, 0.09 };
 
         #endregion
 
@@ -192,7 +192,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static List<(double[], string, int, double[][])> gpPressureGraadientLogs = new List<(double[], string, int, double[][])>()
         {(new double[]{ 0.05301208792514899, 0.053825572057669926, 0.052065045951539365 }, "CenterNodePressureGradients",-1, new double[3][])};
 
-        static double[] monitoredGPcoordsPresGradient = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+        //static double[] monitoredGPcoordsPresGradient = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+        static double[] monitoredGPcoordsPresGradient = new double[] { 0.055, 0.0559, 0.05 };
 
         #endregion
         #endregion
@@ -394,7 +395,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 totalTime, incrementsPertimeStep);
 
             var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers,
-                equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance: 0.0001);
+                equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance: 1E-5);
             for (currentTimeStep = 0; currentTimeStep < totalTime / timeStep; currentTimeStep++)
             {
                 equationModel.CurrentTimeStep = currentTimeStep;
@@ -471,16 +472,21 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 //Console.WriteLine($"Displacement vector: {string.Join(", ", Solution[currentTimeStep])}");
             }
 
-            //Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(p_i, expectedPressurevalues(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(gp_dut_dx_OverTime, expected_dutdx_values(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(gp_dvt_dy_OverTime, expected_dvtdy_values(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(gp_dwt_dz_OverTime, expected_dwtdz_values(), 1e-1));
+            Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1e-3));
+            
+            Assert.True(ResultChecker.CheckResults(velocityResultsX, expectedSolidVelocityX(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(velocityResultsY, expectedSolidVelocityY(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(velocityResultsZ, expectedSolidVelocityZ(), 1e-3));
+            
+            Assert.True(ResultChecker.CheckResults(p_i, expectedPressurevalues(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(gp_dut_dx_OverTime, expected_dutdx_values(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(gp_dvt_dy_OverTime, expected_dvtdy_values(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(gp_dwt_dz_OverTime, expected_dwtdz_values(), 1e-3));
             //Assert.True(ResultChecker.CheckResults(gp_div_v_OverTime, expected_div_vs_values(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(gp_dP_dx_OverTime, expected_dpdx_values(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(gp_dP_dy_OverTime, expected_dpdy_values(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(gp_dP_dz_Overtime, expected_dpdz_values(), 1e-1));
-            //Assert.True(ResultChecker.CheckResults(tCell, expected_Tc_values(), 1e-1));
+            Assert.True(ResultChecker.CheckResults(gp_dP_dx_OverTime, expected_dpdx_values(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(gp_dP_dy_OverTime, expected_dpdy_values(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(gp_dP_dz_Overtime, expected_dpdz_values(), 1e-3));
+            //Assert.True(ResultChecker.CheckResults(tCell, expected_Tc_values(), 1e-3));
 
 
 
@@ -521,127 +527,213 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         }
 
-
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //Node : 0.0, 0.0, 0.1
         public static double[] expectedDisplacments()
         {
             return new double[] {
-                -7.26E-09,
-                -2.53E-08,
-                -5.57E-08,
-                -9.93E-08,
-                -1.56E-07,
-                -2.27E-07,
-                -3.11E-07,
-                -4.08E-07,
-                -5.18E-07,
-                -6.41E-07
+                -3.66177E-09,
+                -1.82506E-08,
+                -4.72353E-08,
+                -9.03487E-08,
+                -1.47347E-07,
+                -2.18019E-07,
+                -3.02169E-07,
+                -3.99613E-07,
+                -5.10167E-07,
+                -6.33648E-07,
+            }; 
+        }
+
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.09, 0.09, 0.09
+        private static double[] expectedSolidVelocityX()
+        {
+            return new double[] {
+                -2.57948E-08,
+                -1.5538E-07 ,
+                -4.79338E-07,
+                -1.00336E-06,
+                -1.65214E-06,
+                -2.38495E-06,
+                -3.20718E-06,
+                -4.12942E-06,
+                -5.16614E-06,
+                -6.33261E-06
+            };
+        }
+        
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.09, 0.09, 0.09
+        private static double[] expectedSolidVelocityY()
+        {
+            return new double[] {
+                -5.30026E-08,
+                -3.23281E-07,
+                -1.00454E-06,
+                -2.11387E-06,
+                -3.49449E-06,
+                -5.04341E-06,
+                -6.74082E-06,
+                -8.57872E-06,
+                -1.05588E-05,
+                -1.26869E-05
+            };
+        }
+        
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.09, 0.09, 0.09
+        private static double[] expectedSolidVelocityZ()
+        {
+            return new double[] {
+                -3.31285E-05,
+                -0.000132685,
+                -0.000265916,
+                -0.000399804,
+                -0.000534109,
+                -0.000668626,
+                -0.000803237,
+                -0.000937851,
+                -0.001072391,
+                -0.001206793,
             };
         }
 
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.05, 0.05, 0.05
         public static double[] expectedPressurevalues()
         {
             return new double[] {
-                -5.53E-05,
-                -1.06E-04,
-                -1.48E-04,
-                -1.81E-04,
-                -2.01E-04,
-                -2.05E-04,
-                -1.90E-04,
-                -1.55E-04,
-                -1.00E-04,
-                -2.55E-05, 
+                -2.62803E-05,
+                -7.73618E-05,
+                -0.000142106,
+                -0.000178119,
+                -0.000222339,
+                -0.000265597,
+                -0.000295448,
+                -0.000282738,
+                -0.00025486 ,
+                -0.000182668
             };
         }
-
+        
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //GP : 0.09, 0.09, 0.09
         public static double[] expected_dutdx_values()
         {
             return new double[] {
-            1.5046278105920462E-05,
-            8.8617497660219155E-05,
-            0.00026689510562568779,
-            0.00053376957178620412,
-            0.00081159440063547543,
-            0.0010392324512686118,
-            0.0011841596351018918,
-            0.0012262079260648756,
-            0.0011580851478102409,
-            0.00097666754328661932,
+                3.09537E-06,
+                1.86456E-05,
+                5.75206E-05,
+                0.000120403,
+                0.000198256,
+                0.000286194,
+                0.000384862,
+                0.000495531,
+                0.000619937,
+                0.000759913,
             };
         }
 
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //GP : 0.09, 0.09, 0.09
         public static double[] expected_dvtdy_values()
         {
             return new double[] {
-            -4.9183616146580148E-05,
-            -0.00031990793942135367,
-            -0.0010452126289494284,
-            -0.0023121523877487429,
-            -0.0040322324519872065,
-            -0.0061097024018783273,
-            -0.0084832146516789931,
-            -0.011108490603471471,
-            -0.013965094795610738,
-            -0.017041826768603045
+                6.36031E-06,
+                3.87937E-05,
+                0.000120545,
+                0.000253664,
+                0.000419339,
+                0.000605209,
+                0.000808898,
+                0.001029447,
+                0.001267052,
+                0.001522424,
             };
         }
 
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //GP : 0.09, 0.09, 0.09
         public static double[] expected_dwtdz_values()
         {
             return new double[] {
-            0.024013273060017812,
-            0.095527520745864361,
-            0.18931185141078608,
-            0.28069438945206548,
-            0.36992113985726005,
-            0.4572951803247241,
-            0.54300618640408982,
-            0.62718236463256549,
-            0.70985946584687643,
-            0.79103569439181676
+                -0.006214244,
+                -0.024834619,
+                -0.049594341,
+                -0.07424962 ,
+                -0.098808016,
+                -0.123276063,
+                -0.147651799,
+                -0.17192928 ,
+                -0.196099345,
+                -0.220151411,
             };
         }
 
         public static double[] expected_div_vs_values()
         {
-            return new double[] {
-            0.023979135721977154,
-            0.095296230304103224,
-            0.18853353388746233,
-            0.27891600663610294,
-            0.3667005018059083,
-            0.45222471037411438,
-            0.53570713138751269,
-            0.61730008195515884,
-            0.697052456199076,
-            0.77497053516650038
-            };
+            return new double[10];
         }
 
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //GP : 0.05, 0.05, 0.05
         public static double[] expected_dpdx_values()
         {
             return new double[] {
-           -0.51071856532594151,
-            -1.7887001011389974,
-            -3.4085533329685966,
-            -4.3925950633681392,
-            -5.2590821460816093,
-            -5.8433941491425614,
-            -6.2892322572273516,
-            -6.6400814219331838,
-            -6.91972551191365,
-            -7.1456532816455649
+                -0.000510087,
+                -0.000582082,
+                0.000128969 ,
+                0.005425463 ,
+                0.011910756 ,
+                0.020264921 ,
+                0.028152223 ,
+                0.033841904 ,
+                0.038328132 ,
+                0.039359541 ,
             };
         }
 
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //GP : 0.05, 0.05, 0.05
         public static double[] expected_dpdy_values()
         {
-            return new double[10];
+            return new double[]
+            {
+                -0.001559998,
+                -0.003938722,
+                -0.006777791,
+                -0.007825571,
+                -0.010430786,
+                -0.017679464,
+                -0.026326288,
+                -0.039003849,
+                -0.052556255,
+                -0.068290536,
+            };
         }
-
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //GP : 0.05, 0.05, 0.05
         public static double[] expected_dpdz_values()
         {
-            return new double[10];
+            return new double[]
+            {
+                -0.00085234,
+                -0.001205138,
+                -0.001344107,
+                1.11914E-05,
+                -0.000479235,
+                -0.007219547,
+                -0.016283798,
+                -0.031968813,
+                -0.049267171,
+                -0.07062152,
+            };
         }
 
         public static double[] expected_Tc_values()

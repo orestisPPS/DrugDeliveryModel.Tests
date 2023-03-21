@@ -25,6 +25,7 @@ using TriangleNet;
 using TriangleNet.Meshing;
 using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using System.Reflection.PortableExecutable;
+using static Xunit.Assert;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
@@ -85,7 +86,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])> structuralNeumannBC =
             new List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, StructuralDof[], double[][], double[])>()
             {
-                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{1E-4 / 4d})
+                (BoundaryAndInitialConditionsUtility.BoundaryConditionCase.TopPointFlux, new StructuralDof[1]{StructuralDof.TranslationZ}, loadCoords, new double []{-1E-4 / 4d})
             };
         
         #endregion
@@ -110,7 +111,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static List<(double[], string, int, double[][])> gpVelocityGraadientLogs = new List<(double[], string, int, double[][])>()
         {(new double[]{ 0.05301208792514899, 0.053825572057669926, 0.052065045951539365 }, "CenterNodeGradients",-1, new double[3][])};
 
-        static double[] monitoredGPcoordsVelocity = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+        //static double[] monitoredGPcoordsVelocity = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+        static double[] monitoredGPCoordsVelocity = new double[] { 0.09, 0.09, 0.09 };
 
         #endregion
 
@@ -196,7 +198,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         static List<(double[], string, int, double[][])> gpPressureGraadientLogs = new List<(double[], string, int, double[][])>()
         {(new double[]{ 0.05301208792514899, 0.053825572057669926, 0.052065045951539365 }, "CenterNodePressureGradients",-1, new double[3][])};
 
-        static double[] monitoredGPcoordsPresGradient = new double[] { 0.004086132769345323, 0.006191771651571988, 0.09369050147682026 };
+        static double[] monitoredGPcoordsPresGradient = new double[] { 0.09, 0.09, 0.09 };
+        static double[] monitoredGPcoordsFluidVelocity = new double[] { 0.09, 0.09, 0.09 };
+        static int fluidVelocityMonitorID;
 
         #endregion
         #endregion
@@ -354,7 +358,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             pressureMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, pressureMonitorNodeCoords , 1e-2);
             //pressureMonitorID = structuralMonitorID;
             coxMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, coxMonitorNodeCoords, 1e-2);
-
+            fluidVelocityMonitorID = Utilities.FindNodeIdFromNodalCoordinates(comsolReader.NodesDictionary, monitoredGPcoordsFluidVelocity, 1e-2);
             var p_i = new double[(int)(totalTime / timeStep)];
 
             double[] structuralResultsX = new double[(int)(totalTime / timeStep)];
@@ -383,6 +387,14 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             dp_dxi.Add(gp_dP_dy_OverTime);
             dp_dxi.Add(gp_dP_dz_Overtime);
             
+            double[] uSolid_t = new double[(int)(totalTime / timeStep)];
+            double[] vSolid_t = new double[(int)(totalTime / timeStep)];
+            double[] wSolid_t = new double[(int)(totalTime / timeStep)];
+            var solidVelocity = new List<double[]>();
+            solidVelocity.Add(uSolid_t);
+            solidVelocity.Add(vSolid_t);
+            solidVelocity.Add(wSolid_t);
+            
             
             double[] uFluid_t = new double[(int)(totalTime / timeStep)];
             double[] vFluid_t = new double[(int)(totalTime / timeStep)];
@@ -391,7 +403,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             fluidVelocity.Add(uFluid_t);
             fluidVelocity.Add(vFluid_t);
             fluidVelocity.Add(wFluid_t);
-
+            
+            
+            
             double[] coxResults = new double[(int)(totalTime / timeStep)];
 
             int monitoredGPVelocity_elemID = -1; // TODO Orestis this will be deleeted if new logs are implemented in a right way.
@@ -423,7 +437,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 totalTime, incrementsPertimeStep);
 
             var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers,
-                equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance: 0.001);                                                       
+                equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance:1E-5);                                                       
             for (currentTimeStep = 0; currentTimeStep < totalTime / timeStep; currentTimeStep++)
             {
                 equationModel.CurrentTimeStep = currentTimeStep;
@@ -433,7 +447,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 #region logging
                 
                 //TODO Orestis: implement here one for loop for each "node Type" requested  log using the following commands
-                monitoredGPVelocity_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsVelocity, 1e-1); //Todo Orestis delete these commands1
+                monitoredGPVelocity_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsFluidVelocity, 1e-1); //Todo Orestis delete these commands1
                 monitoredGPpressureGrad_elemID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[0], monitoredGPcoordsPresGradient, 1e-1);
                 vfMonitorGpID = Utilities.FindElementIdFromGaussPointCoordinates(equationModel.model[2], vfMonitorGpCoords, 1e-1);
 
@@ -463,17 +477,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 vFluid_t[currentTimeStep] = fluidVelocityY;
                 wFluid_t[currentTimeStep] = fluidVelocityZ;
                 
-                var uSolid_t = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][0];
-                var divPxFluid_t = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPVelocity_elemID]).xcoeff_OverTimeAtGp1[0];
-                //uFluid_t[currentTimeStep] = (-k_th_tumor * divPxFluid_t + uSolid_t)* 1000;
+                uSolid_t[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][0];
+                vSolid_t[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][1];
+                wSolid_t[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][2];
                 
-                var vSolid_t = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][1];
-                var divPyFluid_t = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPVelocity_elemID]).ycoeff_OverTimeAtGp1[0];
-                //vFluid_t[currentTimeStep] = (-k_th_tumor * divPyFluid_t + vSolid_t)* 1000;
-                
-                var wSolid_t = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][2];
-                var divPzFluid_t = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPVelocity_elemID]).zcoeff_OverTimeAtGp1[0];
-                //wFluid_t[currentTimeStep] = (-k_th_tumor * divPzFluid_t + wSolid_t)* 1000;
                 
                 coxResults[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[2].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[2].GetNode(coxMonitorID), coxMonitorDOF];
                 //vf_calculated.Add(FluidSpeed[vfMonitorGpID]);
@@ -516,17 +523,22 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(divVelocity), "../../../Coupling78_9_13/results/dut_dxi_GP_mslv.csv");
             CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(new List<double[]>() { coxResults}), "../../../Coupling78_9_13/results/cox_mslv.csv");
             CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(fluidVelocity), "../../../Coupling78_9_13/results/vFluid_GP_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(solidVelocity), "../../../Coupling78_9_13/results/vSolid_GP_mslv.csv");
 
-            /*Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(p_i, expectedPressurevalues(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(gp_dut_dx_OverTime, expected_dutdx_values(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(gp_dvt_dy_OverTime, expected_dvtdy_values(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(gp_dwt_dz_OverTime, expected_dwtdz_values(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(gp_div_v_OverTime, expected_div_vs_values(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(gp_dP_dx_OverTime, expected_dpdx_values(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(gp_dP_dy_OverTime, expected_dpdy_values(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(gp_dP_dz_Overtime, expected_dpdz_values(), 1E-6));
-            Assert.True(ResultChecker.CheckResults(coxResults, expectedCox(), 1E-1));*/
+            
+            True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1E-4));
+            True(ResultChecker.CheckResults(uSolid_t, expectedSolidVelocityX(), 1e-4));
+            True(ResultChecker.CheckResults(vSolid_t, expectedSolidVelocityY(), 1e-4));
+            True(ResultChecker.CheckResults(wSolid_t, expectedSolidVelocityZ(), 1e-4));
+            True(ResultChecker.CheckResults(p_i, expectedPressurevalues(), 1E-4));
+            True(ResultChecker.CheckResults(gp_dut_dx_OverTime, expected_dutdx_values(), 1E-6));
+            True(ResultChecker.CheckResults(gp_dvt_dy_OverTime, expected_dvtdy_values(), 1E-6));
+            True(ResultChecker.CheckResults(gp_dwt_dz_OverTime, expected_dwtdz_values(), 1E-6));
+            True(ResultChecker.CheckResults(gp_div_v_OverTime, expected_div_vs_values(), 1E-6));
+            True(ResultChecker.CheckResults(gp_dP_dx_OverTime, expected_dpdx_values(), 1E-6));
+            True(ResultChecker.CheckResults(gp_dP_dy_OverTime, expected_dpdy_values(), 1E-6));
+            True(ResultChecker.CheckResults(gp_dP_dz_Overtime, expected_dpdz_values(), 1E-6));
+            True(ResultChecker.CheckResults(coxResults, expectedCox(), 1E-1));
 
 
             double pr = 100;
@@ -666,37 +678,101 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         }
 
 
+
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //Node : 0.0, 0.0, 0.1
         public static double[] expectedDisplacments()
         {
             return new double[] {
-             3.6617740000e-09,
-             1.8250890000e-08,
-             4.7236380000e-08,
-             9.0350780000e-08,
-             1.4735030000e-07,
-             2.1802150000e-07,
-             3.0216870000e-07,
-             3.9960820000e-07,
-             5.1015800000e-07,
-             6.3363370000e-07,};
+                -3.66177E-09,
+                -1.82506E-08,
+                -4.72353E-08,
+                -9.03487E-08,
+                -1.47347E-07,
+                -2.18019E-07,
+                -3.02169E-07,
+                -3.99613E-07,
+                -5.10167E-07,
+                -6.33648E-07,
+            }; 
         }
 
-        public static double[] expectedPressurevalues()
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.09, 0.09, 0.09
+        private static double[] expectedSolidVelocityX()
         {
             return new double[] {
-            6.7032500000e-05,
-            1.3046210000e-04,
-            2.2732080000e-04,
-            1.1742530000e-04,
-            1.0975700000e-05,
-            -9.5261250000e-05,
-            -2.8098200000e-04,
-            -5.0883160000e-04,
-            -7.5607230000e-04,
-            -1.0224200000e-03,
+                -2.57948E-08,
+                -1.5538E-07 ,
+                -4.79338E-07,
+                -1.00336E-06,
+                -1.65214E-06,
+                -2.38495E-06,
+                -3.20718E-06,
+                -4.12942E-06,
+                -5.16614E-06,
+                -6.33261E-06
+            };
+        }
+        
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.09, 0.09, 0.09
+        private static double[] expectedSolidVelocityY()
+        {
+            return new double[] {
+                -5.30026E-08,
+                -3.23281E-07,
+                -1.00454E-06,
+                -2.11387E-06,
+                -3.49449E-06,
+                -5.04341E-06,
+                -6.74082E-06,
+                -8.57872E-06,
+                -1.05588E-05,
+                -1.26869E-05
+            };
+        }
+        
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.09, 0.09, 0.09
+        private static double[] expectedSolidVelocityZ()
+        {
+            return new double[] {
+                -3.31285E-05,
+                -0.000132685,
+                -0.000265916,
+                -0.000399804,
+                -0.000534109,
+                -0.000668626,
+                -0.000803237,
+                -0.000937851,
+                -0.001072391,
+                -0.001206793,
             };
         }
 
+        //MSOLVE reference values for Fz = {- 1e-4 / 4}
+        //Great error values in comparison with comsol for the first 10 time steps. Results improve afterwards
+        //GP : 0.05, 0.05, 0.05
+        public static double[] expectedPressurevalues()
+        {
+            return new double[] {
+                -2.62803E-05,
+                -7.73618E-05,
+                -0.000142106,
+                -0.000178119,
+                -0.000222339,
+                -0.000265597,
+                -0.000295448,
+                -0.000282738,
+                -0.00025486 ,
+                -0.000182668
+            };
+        }
         public static double[] expected_dutdx_values()
         {
             return new double[] {
