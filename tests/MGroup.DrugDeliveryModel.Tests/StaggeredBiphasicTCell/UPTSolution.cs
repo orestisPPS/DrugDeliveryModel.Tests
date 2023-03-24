@@ -31,7 +31,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         const double Sc = 0.1;
 
         private const double timeStep = 1E-5; // in sec
-        const double totalTime = 1E-4; // in sec
+        const double totalTime = 2E-3; // in sec
         //const double totalTime = 0.0001 ; // in sec
         static int incrementsPertimeStep = 1;
         static int currentTimeStep = 0;
@@ -339,13 +339,13 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             displacements.Add(structuralResultsY);
             displacements.Add(structuralResultsZ);
             
-            double[] velocityResultsX = new double[(int)(totalTime / timeStep)];
-            double[] velocityResultsY = new double[(int)(totalTime / timeStep)];
-            double[] velocityResultsZ = new double[(int)(totalTime / timeStep)];
-            var velocities = new List<double[]>();
-            velocities.Add(velocityResultsX);
-            velocities.Add(velocityResultsY);
-            velocities.Add(velocityResultsZ);
+            double[] solidVelocityResultsX = new double[(int)(totalTime / timeStep)];
+            double[] solidVelocityResultsY = new double[(int)(totalTime / timeStep)];
+            double[] solidVelocityResultsZ = new double[(int)(totalTime / timeStep)];
+            var solidVelocities = new List<double[]>();
+            solidVelocities.Add(solidVelocityResultsX);
+            solidVelocities.Add(solidVelocityResultsY);
+            solidVelocities.Add(solidVelocityResultsZ);
             
             
             double[] gp_dut_dx_OverTime = new double[(int)(totalTime / timeStep)];
@@ -419,9 +419,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 structuralResultsZ[currentTimeStep] = ((DOFSLog)equationModel.ParentAnalyzers[1].ChildAnalyzer.Logs[0]).DOFValues[equationModel.model[1].GetNode(structuralMonitorID), structuralMonitorDOF];
 
                 //gp (element) logs
-                velocityResultsX[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][0];
-                velocityResultsY[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][1];
-                velocityResultsZ[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][2];
+                solidVelocityResultsX[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][0];
+                solidVelocityResultsY[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][1];
+                solidVelocityResultsZ[currentTimeStep] = ((ContinuumElement3DGrowth)equationModel.model[1].ElementsDictionary[monitoredGPVelocity_elemID]).velocity[0][2];
                 
                 gp_dP_dx_OverTime[currentTimeStep] = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPpressureGrad_elemID]).xcoeff_OverTimeAtGp1[0];
                 gp_dP_dy_OverTime[currentTimeStep] = ((ConvectionDiffusionElement3D)equationModel.model[0].ElementsDictionary[monitoredGPpressureGrad_elemID]).ycoeff_OverTimeAtGp1[0];
@@ -458,9 +458,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                     (equationModel.ParentAnalyzers[j] as NewmarkDynamicAnalyzer).AdvanceStep();
 
                 }
-
                 
-
                 for (int j = 0; j < equationModel.ParentAnalyzers.Length; j++)
                 {
                     equationModel.AnalyzerStates[j] = equationModel.ParentAnalyzers[j].CreateState();
@@ -474,9 +472,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
             Assert.True(ResultChecker.CheckResults(structuralResultsZ, expectedDisplacments(), 1e-3));
             
-            Assert.True(ResultChecker.CheckResults(velocityResultsX, expectedSolidVelocityX(), 1e-3));
-            Assert.True(ResultChecker.CheckResults(velocityResultsY, expectedSolidVelocityY(), 1e-3));
-            Assert.True(ResultChecker.CheckResults(velocityResultsZ, expectedSolidVelocityZ(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(solidVelocityResultsX, expectedSolidVelocityX(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(solidVelocityResultsY, expectedSolidVelocityY(), 1e-3));
+            Assert.True(ResultChecker.CheckResults(solidVelocityResultsZ, expectedSolidVelocityZ(), 1e-3));
             
             Assert.True(ResultChecker.CheckResults(p_i, expectedPressurevalues(), 1e-3));
             Assert.True(ResultChecker.CheckResults(gp_dut_dx_OverTime, expected_dutdx_values(), 1e-3));
@@ -523,7 +521,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             CSVExporter.ExportVectorToCSV(p_i, "../../../StaggeredBiphasicTCell/pi_nodes_mslv.csv");
             CSVExporter.ExportVectorToCSV(tCell, "../../../StaggeredBiphasicTCell/tCell_nodes_mslv.csv");
             CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(divVelocity), "../../../StaggeredBiphasicTCell/dut_dxi_GP_mslv.csv");
-            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(velocities), "../../../StaggeredBiphasicTCell/ut_GP_mslv.csv");
+            CSVExporter.ExportMatrixToCSV(CSVExporter.ConverVectorsTo2DArray(solidVelocities), "../../../StaggeredBiphasicTCell/ut_GP_mslv.csv");
 
         }
 

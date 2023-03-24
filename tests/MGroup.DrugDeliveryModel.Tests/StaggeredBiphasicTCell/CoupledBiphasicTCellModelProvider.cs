@@ -119,14 +119,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             }
             foreach (var elem in reader.ElementConnectivity)
             {
-                SolidVelocityAtElementGaussPoints[elem.Key] =
-                    ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity;
-                SolidVelocityAtElementGaussPoints[elem.Key][0][0] =
-                    SolidVelocityAtElementGaussPoints[elem.Key][0][0] * 1000;
-                SolidVelocityAtElementGaussPoints[elem.Key][0][1] =
-                    SolidVelocityAtElementGaussPoints[elem.Key][0][1] * 1000;
-                SolidVelocityAtElementGaussPoints[elem.Key][0][2] =
-                    SolidVelocityAtElementGaussPoints[elem.Key][0][2] * 1000;
+                var velocityAtGP0 = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0];
+                SolidVelocityAtElementGaussPoints[elem.Key][0][0] = velocityAtGP0[0] * 1000;
+                SolidVelocityAtElementGaussPoints[elem.Key][0][1] = velocityAtGP0[1] * 1000;
+                SolidVelocityAtElementGaussPoints[elem.Key][0][2] = velocityAtGP0[2] * 1000;
             }
             
             model = new Model[3];
@@ -174,13 +170,10 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 }
                 foreach (var elem in reader.ElementConnectivity)
                 {
-                    SolidVelocityAtElementGaussPoints[elem.Key] = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity;
-                    SolidVelocityAtElementGaussPoints[elem.Key][0][0] =
-                        SolidVelocityAtElementGaussPoints[elem.Key][0][0] * 1000;
-                    SolidVelocityAtElementGaussPoints[elem.Key][0][1] =
-                        SolidVelocityAtElementGaussPoints[elem.Key][0][1] * 1000;
-                    SolidVelocityAtElementGaussPoints[elem.Key][0][2] =
-                        SolidVelocityAtElementGaussPoints[elem.Key][0][2] * 1000;
+                    var velocityAtGP0 = ((ContinuumElement3DGrowth)model[1].ElementsDictionary[elem.Key]).velocity[0];
+                    SolidVelocityAtElementGaussPoints[elem.Key][0][0] = velocityAtGP0[0] * 1000;
+                    SolidVelocityAtElementGaussPoints[elem.Key][0][1] = velocityAtGP0[1] * 1000;
+                    SolidVelocityAtElementGaussPoints[elem.Key][0][2] = velocityAtGP0[2] * 1000;
                 }
             }
 
