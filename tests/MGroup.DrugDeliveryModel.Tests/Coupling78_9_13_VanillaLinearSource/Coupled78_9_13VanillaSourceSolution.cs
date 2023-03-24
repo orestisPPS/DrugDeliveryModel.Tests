@@ -29,7 +29,7 @@ using static Xunit.Assert;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
-    public class Coupled78_9_13Solution
+    public class Coupled78_9_13VanillaSourceSolution
     {
         const double Sc = 0.1;
 
@@ -270,20 +270,9 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         private List<double[]> vf_calculated = new List<double[]>();
 
         private readonly Func<double> independentLinearSource = () => PerOx * SvCox * CInitOx;
-
-        private Dictionary<int, Func<double, double>> ProductionFuncsWithoutConstantTerm = new Dictionary<int, Func<double, double>>();
-        public Func<double, double> getProductionFuncWithoutConstantTerm(int i)
-        {
-            //return (double Cox) => -PerOx * Sv * Cox - Aox * T[i] * Cox / (Cox + Kox);
-            return (double Cox) => -PerOx * SvCox * Cox; //Linear
-        }
-
-        private Dictionary<int, Func<double, double>> ProductionFuncsWithoutConstantTermDerivative = new Dictionary<int, Func<double, double>>();
-        public Func<double, double> getProductionFuncWithoutConstantTermDerivative(int i)
-        {
-            //return (double Cox) => -PerOx * Sv - Aox * T[i] / (Cox + Kox) + Aox * T[i] * Cox * Math.Pow(Cox + Kox, -2);
-            return (double Cox) => -PerOx * SvCox; //Linear
-        }
+        
+        private readonly Func<double> dependentLinearSource = () => -PerOx * SvCox;
+        
 
         #endregion
 
@@ -298,7 +287,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         #endregion
 
 
-        public Coupled78_9_13Solution()
+        public Coupled78_9_13VanillaSourceSolution()
         {
             IsoparametricJacobian3D.DeterminantTolerance = 1e-20;
         }
@@ -331,8 +320,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 //Cox Init
                 FluidSpeed.Add(elem.Key, new double[] { FluidSpeedInit, FluidSpeedInit, FluidSpeedInit });
                 T.Add(elem.Key, TInit);
-                ProductionFuncsWithoutConstantTerm.Add(elem.Key, getProductionFuncWithoutConstantTerm(elem.Key));
-                ProductionFuncsWithoutConstantTermDerivative.Add(elem.Key, getProductionFuncWithoutConstantTermDerivative(elem.Key));
             }
 
             Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints =
@@ -435,19 +422,17 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                 structuralMonitorID, eq9dofTypeToMonitor, structuralNeumannBC, structuralDirichletBC);
 
             //Create Model For Oxygen
-            var coxModel = new CoxModelBuilder(comsolReader, FluidSpeed, Dox, Aox, Kox, PerOx, SvCox, CInitOx, T, 0d, 
-                                            independentLinearSource, ProductionFuncsWithoutConstantTerm, ProductionFuncsWithoutConstantTermDerivative,
+            var coxModel = new CoxVanillaSourceModelBuilder(comsolReader, FluidSpeed, Dox, Aox, Kox, PerOx, SvCox, CInitOx, T, 0d, 
+                                            independentLinearSource, dependentLinearSource,
                                             coxMonitorID, coxMonitorDOF, convectionDiffusionDirichletBC, convectionDiffusionNeumannBC);
 
             //COMMITED BY NACHO 
             //jkkk bn///////vji typ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[00u-----------------------------------
 
-            var equationModel = new Coupled78_9_13Model(eq78Model, coxModel, eq9Model, comsolReader, lambda,
-                pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, FluidSpeed, k_th_tumor, timeStep,
-                totalTime, incrementsPertimeStep);
-
-            var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers,
-                equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance:1E-5);                                                       
+            var equationModel = new Coupled78_9_13_VanillaSourceModel(eq78Model, coxModel, eq9Model , comsolReader, lambda, pressureTensorDivergenceAtElementGaussPoints, velocityDivergenceAtElementGaussPoints, FluidSpeed, k_th_tumor, timeStep,
+                totalTime, 200);
+            
+            var staggeredAnalyzer = new StepwiseStaggeredAnalyzer(equationModel.ParentAnalyzers, equationModel.ParentSolvers, equationModel.CreateModel, maxStaggeredSteps: 200, tolerance:1E-5);                                                       
             for (currentTimeStep = 0; currentTimeStep < totalTime / timeStep; currentTimeStep++)
             {
                 equationModel.CurrentTimeStep = currentTimeStep;
