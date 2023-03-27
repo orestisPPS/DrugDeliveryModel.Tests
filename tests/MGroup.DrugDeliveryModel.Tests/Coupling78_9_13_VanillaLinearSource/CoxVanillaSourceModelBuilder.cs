@@ -109,8 +109,8 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
 
         public CoxVanillaSourceModelBuilder(ComsolMeshReader modelReader,
-            Dictionary<int, double[]> FluidSpeed, double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, Dictionary<int, double> T, double initialCondition,
-            Func<double> independentLinearSource, Func<double> dependentLinearSource,
+            Dictionary<int, double[]> FluidSpeed,Func<double> independentLinearSource, Func<double> dependentLinearSource,
+            double Dox, double Aox, double Kox, double PerOx, double Sv, double CInitOx, double initialCondition,
             int nodeIdToMonitor, ConvectionDiffusionDof dofTypeToMonitor,
             List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionDirichletBC,
             List<(BoundaryAndInitialConditionsUtility.BoundaryConditionCase, ConvectionDiffusionDof[], double[][], double[])> convectionDiffusionNeumannBC )
@@ -123,7 +123,6 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
             this.PerOx = PerOx;
             this.Sv = Sv;
             this.CInitOx = CInitOx;
-            this.T = T;
             this.initialCondition = initialCondition;
 
             this.independentLinearSource = independentLinearSource;
@@ -196,6 +195,33 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
                     (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
                 }
             };
+            linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel);
+
+            return (analyzer, solver, linearAnalyzer);
+        }
+        
+        public (IParentAnalyzer analyzer, ISolver solver, IChildAnalyzer loadcontrolAnalyzer) GetAppropriateSolverAnalyzerAndLog
+        (Model model, double pseudoTimeStep, double pseudoTotalTime, int currentStep)
+        {
+            var solverFactory = new DenseMatrixSolver.Factory() { IsMatrixPositiveDefinite = false }; //Dense Matrix Solver solves with zero matrices!
+                                                                                                      //var solverFactory = new SkylineSolver.Factory() { FactorizationPivotTolerance = 1e-8 };
+            var algebraicModel = solverFactory.BuildAlgebraicModel(model);
+            var solver = solverFactory.BuildSolver(algebraicModel);
+            var provider = new ProblemConvectionDiffusion(model, algebraicModel);
+
+
+            var linearAnalyzer = new LinearAnalyzer(algebraicModel, solver, provider);
+
+            var analyzerBuilder = new NewmarkDynamicAnalyzer.Builder(algebraicModel, provider, linearAnalyzer, timeStep: pseudoTimeStep, totalTime: pseudoTotalTime, true, currentStep: currentStep);
+            analyzerBuilder.SetNewmarkParametersForConstantAcceleration();
+            var analyzer = analyzerBuilder.Build();
+            var watchDofs = new[]
+            {
+                    new List<(INode node, IDofType dof)>()
+                    {
+                        (model.NodesDictionary[nodeIdToMonitor], dofTypeToMonitor),
+                    }
+                };
             linearAnalyzer.LogFactory = new LinearAnalyzerLogFactory(watchDofs[0], algebraicModel);
 
             return (analyzer, solver, linearAnalyzer);
