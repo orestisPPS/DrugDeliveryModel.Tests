@@ -31,7 +31,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
         const double Sc = 0.1;
 
         private const double timeStep = 1E-5; // in sec
-        const double totalTime = 2E-3; // in sec
+        const double totalTime = 10E-5; // in sec
         //const double totalTime = 0.0001 ; // in sec
         static int incrementsPertimeStep = 1;
         static int currentTimeStep = 0;

@@ -78,14 +78,23 @@ namespace ConvectionDiffusionTest
             model.BoundaryConditions.Add(new ConvectionDiffusionBoundaryConditionSet(
                 new[]
                 {          
-                    new NodalUnknownVariable(nodes[0], ConvectionDiffusionDof.UnknownVariable, 100d),
-                    new NodalUnknownVariable(nodes[4], ConvectionDiffusionDof.UnknownVariable, 100d),
-                    new NodalUnknownVariable(nodes[8], ConvectionDiffusionDof.UnknownVariable, 100d),
-                    new NodalUnknownVariable(nodes[12], ConvectionDiffusionDof.UnknownVariable, 100d),
-                    new NodalUnknownVariable(nodes[3], ConvectionDiffusionDof.UnknownVariable, 50d),
-                    new NodalUnknownVariable(nodes[7], ConvectionDiffusionDof.UnknownVariable, 50d),
-                    new NodalUnknownVariable(nodes[11], ConvectionDiffusionDof.UnknownVariable, 50d),
-                    new NodalUnknownVariable(nodes[15], ConvectionDiffusionDof.UnknownVariable, 50d)
+                    //new NodalUnknownVariable(nodes[0], ConvectionDiffusionDof.UnknownVariable, 100d),
+                    //new NodalUnknownVariable(nodes[4], ConvectionDiffusionDof.UnknownVariable, 100d),
+                    //new NodalUnknownVariable(nodes[8], ConvectionDiffusionDof.UnknownVariable, 100d),
+                    //new NodalUnknownVariable(nodes[12], ConvectionDiffusionDof.UnknownVariable, 100d),
+                    //new NodalUnknownVariable(nodes[3], ConvectionDiffusionDof.UnknownVariable, 50d),
+                    //new NodalUnknownVariable(nodes[7], ConvectionDiffusionDof.UnknownVariable, 50d),
+                    //new NodalUnknownVariable(nodes[11], ConvectionDiffusionDof.UnknownVariable, 50d),
+                    //new NodalUnknownVariable(nodes[15], ConvectionDiffusionDof.UnknownVariable, 50d)
+                    
+                    new NodalUnknownVariable(nodes[0], ConvectionDiffusionDof.UnknownVariable, 1d),
+                    new NodalUnknownVariable(nodes[4], ConvectionDiffusionDof.UnknownVariable, 1d),
+                    new NodalUnknownVariable(nodes[8], ConvectionDiffusionDof.UnknownVariable, 1d),
+                    new NodalUnknownVariable(nodes[12], ConvectionDiffusionDof.UnknownVariable,1d),
+                    new NodalUnknownVariable(nodes[3], ConvectionDiffusionDof.UnknownVariable, 1d),
+                    new NodalUnknownVariable(nodes[7], ConvectionDiffusionDof.UnknownVariable, 1d),
+                    new NodalUnknownVariable(nodes[11], ConvectionDiffusionDof.UnknownVariable,1d),
+                    new NodalUnknownVariable(nodes[15], ConvectionDiffusionDof.UnknownVariable,1d)
                 },
                 new INodalConvectionDiffusionNeumannBoundaryCondition[]{}
             ));

@@ -22,7 +22,7 @@ using MGroup.FEM.Structural.Continuum;
 
 namespace MGroup.DrugDeliveryModel.Tests.Integration
 {
-	public class Coupled78_9_13_VanillaSourceModel
+	public class Coupled78_9_13_VanillaSourceModelOld
     {
         public Eq78ModelProviderForStaggeredSolutionex7ref Eq78ModelProvider { get; set; }
         public CoxVanillaSourceModelBuilder CoxModelProvider { get; set; }
@@ -61,7 +61,7 @@ namespace MGroup.DrugDeliveryModel.Tests.Integration
 
         private int incrementsPerStep;
 
-        public Coupled78_9_13_VanillaSourceModel(Eq78ModelProviderForStaggeredSolutionex7ref eq78ModelProvider, CoxVanillaSourceModelBuilder coxModelProvider,
+        public Coupled78_9_13_VanillaSourceModelOld(Eq78ModelProviderForStaggeredSolutionex7ref eq78ModelProvider, CoxVanillaSourceModelBuilder coxModelProvider,
                                      Eq9ModelProviderForStaggeredSolutionEx7Ref eq9ModelProvider, ComsolMeshReader comsolReader,
             Dictionary<int, double> lambda, Dictionary<int, double[][]> pressureTensorDivergenceAtElementGaussPoints,
             Dictionary<int, double[]> div_vs, Dictionary<int, double[]> FluidSpeed, double kth, double timeStep, double totalTime, int incrementsPerStep)

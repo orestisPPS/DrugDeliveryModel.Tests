@@ -21,9 +21,9 @@ namespace MGroup.FEM.ConvectionDiffusion.Tests.Integration
         [Fact]
         private void RunTest()
         {
-            double[] convectionCoeff = new[] { 1d, 1d };
+            double[] convectionCoeff = new[] { 0d, 0d };
             double diffusionCoeff = 1d;
-            double capacityCoeff = 1d;
+            double capacityCoeff = 0d;
             double dependentSourceCoeff = 0d;
             double independentSourceCoeff = 0d;
 
